@@ -1,11 +1,6 @@
     .arch armv8-a
 
-    .data
-    .global a
-    .align 4
-    .size a, 4
-a:
-    .word 66
+    .comm n, 4
     .text
     .align 2
     .section .rodata
@@ -14,6 +9,8 @@ str:
     .ascii "%d \00"
 str1:
     .ascii "\n\00"
+str2:
+    .ascii "%d\00"
 
     .text 
     .align 1
@@ -67,7 +64,14 @@ ret:
     .syntax unified
 	.fpu vfpv3-d16
 main:
-    push {r4, fp, lr}
+    push {r4, r5, fp, lr}
+    ldr r0, _bridge+8
+    ldr r1, _bridge+12
+    bl __isoc99_scanf
+    ldr r3, _bridge+12
+    ldr r5, [r3]
+
+
     mov r4, #1
 L1:
     mov r1, r4
@@ -79,7 +83,7 @@ L1:
     bl printf
 not:
     add r4, r4, #1
-    cmp r4, #100
+    cmp r4, r5
     bgt L1_END
     b L1
 
@@ -87,11 +91,13 @@ L1_END:
     ldr r0, _bridge+4
     bl printf
     mov r0, #0
-    pop {r4, fp, pc}
+    pop {r4, r5, fp, pc}
 
 _bridge:
     .word str
     .word str1
+    .word str2
+    .word n
 
     .section .note.GNU-stack,"",%progbits @ do you know what's the use of this :-)
 
