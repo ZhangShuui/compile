@@ -22,8 +22,6 @@
     extern FILE *yyin; 
     extern FILE *yyout;
 
-    #include <iostream>
-
     int chars = 0;
 
     // https://www.docin.com/p-1224415272.html
@@ -308,7 +306,6 @@ LINECOMMENT \/\/[^\n]*
         DEBUG_FOR_LAB4("LBRACE\t{");
         chars += strlen("{");
         symbolLen[symbolArrIdx] = symbolIdx + 1;
-        cout << '{' << symbolArrIdx << ' ' << symbolIdx << endl;
         scope.push(++symbolArrIdx);
         symbolIdx = 0;
     #else
@@ -325,7 +322,6 @@ LINECOMMENT \/\/[^\n]*
             scope.pop();
         }
         symbolIdx = (symbolLen[temp] - 1) >= 0 ? (symbolLen[temp] - 1): 0;
-        cout << '}' << temp << ' ' << symbolIdx << endl;
     #else
         return RBRACE;
     #endif
@@ -403,16 +399,10 @@ LINECOMMENT \/\/[^\n]*
 {ID} {
     stack<int> temp;
     bool flag = false;
-    if(yytext == string("main")){
-            cout << scope.size() << endl;
-        }
     while(!scope.empty()){
         int arrIdx = scope.top();
         scope.pop();
         temp.push(arrIdx);
-        if(yytext == string("main")){
-            cout << arrIdx << endl;
-        }
         for(int i=0;i<symbolLen[arrIdx];i++){
             if(symbol[arrIdx][i].name == string(yytext)){
                 DEBUG_FOR_LAB4(string("ID\t") + string(yytext), &(symbol[arrIdx][i]));
@@ -437,7 +427,6 @@ LINECOMMENT \/\/[^\n]*
                 break;
             }
         if(!flag){
-            cout << yytext << ' ' << arrIdx << ' ' << symbolIdx << endl;
             symbol[arrIdx][symbolIdx].name = string(yytext);
             DEBUG_FOR_LAB4(string("ID\t") + string(yytext), &(symbol[arrIdx][symbolIdx++]));
         }
