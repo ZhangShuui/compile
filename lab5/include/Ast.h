@@ -111,14 +111,18 @@ class ImplicitValueInitExpr : public ExprNode {
 class InitValueListExpr : public ExprNode {
    private:
     ExprNode* expr;
+    int childCnt;
 
    public:
     InitValueListExpr(SymbolEntry* se, ExprNode* expr = nullptr)
-        : ExprNode(se, INITVALUELISTEXPR), expr(expr){};
+        : ExprNode(se, INITVALUELISTEXPR), expr(expr) {
+        childCnt = 0;
+    };
     void output(int level);
     ExprNode* getExpr() const { return expr; };
-    void setExpr(ExprNode* expr);
-    // int fillValue(int* p, int idx, int lastIdx);
+    void addExpr(ExprNode* expr);
+    bool isEmpty() { return childCnt == 0; };
+    bool isFull();
 };
 
 class StmtNode : public Node {};

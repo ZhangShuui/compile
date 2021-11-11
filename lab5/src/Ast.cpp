@@ -201,7 +201,8 @@ void Id::output(int level) {
 
 void InitValueListExpr::output(int level) {
     std::string type;
-    type = symbolEntry->getType()->toStr();
+    if (symbolEntry->getType())
+        type = symbolEntry->getType()->toStr();
     fprintf(yyout, "%*cInitValueListExpr\ttype: %s\n", level, ' ',
             type.c_str());
     Node* temp = expr;
@@ -211,20 +212,21 @@ void InitValueListExpr::output(int level) {
     }
 }
 
-void InitValueListExpr::setExpr(ExprNode* expr) {
-    assert(this->expr == nullptr);
-    this->expr = expr;
+void InitValueListExpr::addExpr(ExprNode* expr) {
+    if (this->expr == nullptr) {
+        assert(childCnt == 0);
+        childCnt++;
+        this->expr = expr;
+    } else {
+        childCnt++;
+        this->expr->setNext(expr);
+    }
 }
 
-// int InitValueListExpr::fillValue(int* p, int idx, int lastIdx) {
-//     ExprNode* expr = this->expr;
-//     if(expr)
-//     while (expr) {
-//         if (expr->isExpr()) {
-//             p[idx++] = expr->getValue();
-//         }
-//     }
-// }
+bool InitValueListExpr::isFull() {
+    ArrayType* type = (ArrayType*)(this->symbolEntry->getType());
+    return childCnt == type->getLength();
+}
 
 void CompoundStmt::output(int level) {
     fprintf(yyout, "%*cCompoundStmt\n", level, ' ');
