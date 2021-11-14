@@ -82,16 +82,31 @@ LVal
         }
         $$ = new Id(se);
         delete []$1;
-    // }
-    // | LVal LBRACKET Exp RBRACKET {
-    //     SymbolEntry* se;
-    //     se = identifiers->lookup($1);
-    //     if(se == nullptr)
-    //     {
-    //         fprintf(stderr, "identifier \"%s\" is undefined\n", (char*)$1);
-    //         delete [](char*)$1;
-    //         assert(se != nullptr);
-    //     }
+    }
+    | ID ArrayIndices{
+        //拿到一维数组里的值
+        SymbolEntry* se;
+        se = identifiers->lookup($1);
+        if(se == nullptr)
+        {
+            fprintf(stderr, "identifier \"%s\" is undefined\n", (char*)$1);
+            delete [](char*)$1;
+            assert(se != nullptr);
+        }
+        $$ = new Id(se);
+        
+        delete []$1;
+        //将$2的值放到
+        ExprNode* temp = $2;
+        Constant * tempposition=$$->Arrayposition;
+        while(temp){
+            SymbolEntry* se=new ConstantSymbolEntry(IntType,temp->getValue());
+            tempposition=new Constant(se);
+            tempposition=tempposition->Arraychild;
+            temp = (ExprNode*)(temp->getNext());
+        }
+        
+
     }
     ; 
 AssignStmt
@@ -176,6 +191,7 @@ PrimaryExp
             globals->install(std::string($1), se);
         }
         ExprNode* expr = new ExprNode(se);
+
         $$ = expr;
     }
     | INTEGER {
@@ -195,6 +211,11 @@ UnaryExp
             assert(se != nullptr);
         }
         $$ = new CallExpr(se, $3);
+
+
+
+
+
     }
     | ID LPAREN RPAREN {
         SymbolEntry* se;
@@ -553,6 +574,7 @@ InitVal
             arrayType = (ArrayType*)(((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
     }
     ;
+
 ConstInitVal
     : ConstExp {$$=$1;}
     | LBRACE RBRACE {
@@ -656,6 +678,11 @@ FuncFParam
     }
     | Type ID FuncArrayIndices {
         // 这里也需要求值
+        SymbolEntry* se;
+        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        identifiers->install($2, se);
+        $$ = new DeclStmt(new Id(se));
+        delete []$2;
     }
     ;
 FuncArrayIndices 

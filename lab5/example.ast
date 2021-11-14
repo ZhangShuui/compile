@@ -1,0 +1,12 @@
+program
+    DeclStmt
+        Id	name: a	scope: 0	type: int[2][2][2]
+        InitValueListExpr	type: int[2][2][2]
+            InitValueListExpr	type: int[2][2]
+            InitValueListExpr	type: int[2][2]
+                InitValueListExpr	type: int[2]
+                    IntegerLiteral	value: 1	type: int
+    AssignStmt
+        Id	name: a	scope: 0	type: int[2][2][2]
+        
+        IntegerLiteral	value: 1	type: int

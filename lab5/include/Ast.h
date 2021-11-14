@@ -26,6 +26,7 @@ class ExprNode : public Node {
    protected:
     SymbolEntry* symbolEntry;
     enum { EXPR, INITVALUELISTEXPR };
+    
 
    public:
     ExprNode(SymbolEntry* symbolEntry, int kind = EXPR)
@@ -89,6 +90,7 @@ class CallExpr : public ExprNode {
 
 class Constant : public ExprNode {
    public:
+    Constant * Arraychild;
     Constant(SymbolEntry* se) : ExprNode(se){};
     void output(int level);
     int getValue();
@@ -96,6 +98,7 @@ class Constant : public ExprNode {
 
 class Id : public ExprNode {
    public:
+    Constant *Arrayposition;
     Id(SymbolEntry* se) : ExprNode(se){};
     void output(int level);
     SymbolEntry* getSymbolEntry() { return symbolEntry; };

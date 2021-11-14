@@ -167,8 +167,12 @@ void CallExpr::output(int level) {
     scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
     fprintf(yyout, "%*cCallExpr\tfunction name: %s\tscope: %d\ttype: %s\n",
             level, ' ', name.c_str(), scope, type.c_str());
-    if (param)
-        param->output(level + 4);
+    Node* temp = param;        
+    while(temp){
+        temp->output(level + 4);
+        temp = temp->getNext();
+
+    }
 }
 
 void Constant::output(int level) {
@@ -230,13 +234,14 @@ bool InitValueListExpr::isFull() {
 
 void CompoundStmt::output(int level) {
     fprintf(yyout, "%*cCompoundStmt\n", level, ' ');
-    stmt->output(level + 4);
+    if(stmt)
+        stmt->output(level + 4);
 }
 
 void SeqNode::output(int level) {
-    fprintf(yyout, "%*cSequence\n", level, ' ');
-    stmt1->output(level + 4);
-    stmt2->output(level + 4);
+    // fprintf(yyout, "%*cSequence\n", level, ' ');
+    stmt1->output(level);
+    stmt2->output(level);
 }
 
 void DeclStmt::output(int level) {
@@ -274,11 +279,13 @@ void ContinueStmt::output(int level) {
 
 void ReturnStmt::output(int level) {
     fprintf(yyout, "%*cReturnStmt\n", level, ' ');
-    retValue->output(level + 4);
+    if(retValue!=nullptr)
+        retValue->output(level + 4);
 }
 
 void AssignStmt::output(int level) {
     fprintf(yyout, "%*cAssignStmt\n", level, ' ');
+    
     lval->output(level + 4);
     expr->output(level + 4);
 }

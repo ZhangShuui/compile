@@ -27,7 +27,10 @@ std::string ArrayType::toStr() {
     Type* temp = this;
     while (temp && temp->isArray()) {
         std::ostringstream buffer;
-        buffer << '[' << ((ArrayType*)temp)->getLength() << ']';
+        if(temp == this && length == 0)
+            buffer << '[' << ']';
+        else
+            buffer << '[' << ((ArrayType*)temp)->getLength() << ']';
         vec.push_back(buffer.str());
         temp = ((ArrayType*)temp)->getElementType();
         ;
