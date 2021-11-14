@@ -180,17 +180,15 @@ void Constant::output(int level) {
     value = symbolEntry->toStr();
     fprintf(yyout, "%*cIntegerLiteral\tvalue: %s\ttype: %s\n", level, ' ',
             value.c_str(), type.c_str());
-    if (arrayChild)
-        arrayChild->output(level + 4);
 }
 
 int Constant::getValue() {
-    assert(symbolEntry->getType()->isInt());
+    // assert(symbolEntry->getType()->isInt());
     return ((ConstantSymbolEntry*)symbolEntry)->getValue();
 }
 
 int Id::getValue() {
-    assert(symbolEntry->getType()->isInt());
+    // assert(symbolEntry->getType()->isInt());
     return ((IdentifierSymbolEntry*)symbolEntry)->getValue();
 }
 
@@ -202,8 +200,14 @@ void Id::output(int level) {
     scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
     fprintf(yyout, "%*cId\tname: %s\tscope: %d\ttype: %s\n", level, ' ',
             name.c_str(), scope, type.c_str());
-    if (arrayPosition)
-        arrayPosition->output(level + 4);
+    if (arrIdx) {
+        ExprNode* temp = arrIdx;
+        int i = 0;
+        while (temp) {
+            temp->output(level + 4 + 4 * i++);
+            temp = (ExprNode*)(temp->getNext());
+        }
+    }
 }
 
 void InitValueListExpr::output(int level) {

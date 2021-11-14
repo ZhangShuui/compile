@@ -25,6 +25,7 @@ class ExprNode : public Node {
 
    protected:
     SymbolEntry* symbolEntry;
+    // ExprNode* arrIdx;
     enum { EXPR, INITVALUELISTEXPR };
 
    public:
@@ -35,6 +36,8 @@ class ExprNode : public Node {
     bool isExpr() const { return kind == EXPR; };
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
     SymbolEntry* getSymbolEntry() const { return symbolEntry; };
+    // ExprNode* getArrIdx() const {return arrIdx;};
+    // void setArrIdx(ExprNode* arrIdx) { this->arrIdx = arrIdx; };
 };
 
 class BinaryExpr : public ExprNode {
@@ -88,23 +91,19 @@ class CallExpr : public ExprNode {
 };
 
 class Constant : public ExprNode {
-   private:
-    Constant* arrayChild;
-
    public:
-    Constant(SymbolEntry* se, Constant* arrayChild = nullptr)
-        : ExprNode(se), arrayChild(arrayChild){};
+    Constant(SymbolEntry* se) : ExprNode(se){};
     void output(int level);
     int getValue();
 };
 
 class Id : public ExprNode {
    private:
-    ExprNode* arrayPosition;
+    ExprNode* arrIdx;
 
    public:
-    Id(SymbolEntry* se, Constant* arrayPosition = nullptr)
-        : ExprNode(se), arrayPosition(arrayPosition){};
+    Id(SymbolEntry* se, ExprNode* arrIdx = nullptr)
+        : ExprNode(se), arrIdx(arrIdx){};
     void output(int level);
     SymbolEntry* getSymbolEntry() { return symbolEntry; };
     int getValue();

@@ -92,19 +92,8 @@ LVal
             delete [](char*)$1;
             assert(se != nullptr);
         }
-        $$ = new Id(se);
+        $$ = new Id(se, $2);
         delete []$1;
-        //将$2的值放到
-        // ExprNode* temp = $2;
-        // Constant* tempposition=$$->Arrayposition;
-        // while(temp){
-        //     SymbolEntry* se=new ConstantSymbolEntry(IntType,temp->getValue());
-        //     tempposition=new Constant(se);
-        //     tempposition=tempposition->Arraychild;
-        //     temp = (ExprNode*)(temp->getNext());
-        // }
-        
-
     }
     ; 
 AssignStmt
@@ -209,11 +198,6 @@ UnaryExp
             assert(se != nullptr);
         }
         $$ = new CallExpr(se, $3);
-
-
-
-
-
     }
     | ID LPAREN RPAREN {
         SymbolEntry* se;
@@ -431,53 +415,33 @@ ConstDef
         delete []$1;
     }
     | ID ArrayIndices ASSIGN  {
-        // SymbolEntry* se;
-        // std::vector<int> vec;
-        // ExprNode* temp = $2;
-        // while(temp){
-        //     vec.push_back(temp->getValue());
-        //     temp = (ExprNode*)(temp->getNext());
-        // }
-        // Type* type = TypeSystem::intType;
-        // Type* temp1;
-        // for(auto it = vec.rbegin(); it != vec.rend(); it++) {
-        //     temp1 = new ArrayType(type, *it, true);
-        //     if(type->isArray())
-        //         ((ArrayType*)type)->setArrayType(temp1);
-        //     type = temp1;
-        // }
-        // arrayType = (ArrayType*)type;
-        // cnt = 0;
-        // se = new IdentifierSymbolEntry(type, $1, identifiers->getLevel());
-        // $<se>$ = se;
+        SymbolEntry* se;
+        std::vector<int> vec;
+        ExprNode* temp = $2;
+        while(temp){
+            vec.push_back(temp->getValue());
+            temp = (ExprNode*)(temp->getNext());
+        }
+        Type* type = TypeSystem::intType;
+        Type* temp1;
+        for(auto it = vec.rbegin(); it != vec.rend(); it++) {
+            temp1 = new ArrayType(type, *it);
+            if(type->isArray())
+                ((ArrayType*)type)->setArrayType(temp1);
+            type = temp1;
+        }
+        arrayType = (ArrayType*)type;
+        idx = 0;
+        std::stack<InitValueListExpr*>().swap(stk);
+        se = new IdentifierSymbolEntry(type, $1, identifiers->getLevel());
+        $<se>$ = se;
+        arrayValue = new int[arrayType->getSize()];
     }
       ConstInitVal {
-        // int *p = new int[arrayType->getSize()];
-        // ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(p);
-        // identifiers->install($1, $<se>4);
-        // $$ = new DeclStmt(new Id($<se>4), $5);
-        // // ExprNode* expr = $5;
-        // std::cout << $<se>4->getType()->getSize() << std::endl;
-        // // int idx = 0;
-        // std::stack<InitValueListExpr*> stk;
-        // while(expr){
-        //     if(expr->isExpr()){
-        //         p[idx++] = expr->getValue();
-        //     }else if(expr->isInitValueListExpr()){
-        //         // Type* type = expr->getSymbolEntry()->getType();
-        //         // if(type == TypeSystem::voidType){
-        //             // 要报错
-        //         // }
-
-        //         // if(expr->getExpr() == nullptr){
-
-        //         // }
-
-
-        //     }
-            
-        // }
-        // delete []$1;
+        ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
+        identifiers->install($1, $<se>4);
+        $$ = new DeclStmt(new Id($<se>4), $5);
+        delete []$1;
     } 
     ;
 ArrayIndices
@@ -609,14 +573,9 @@ ConstInitVal
     ;
 InitValList
     : InitVal {
-        // stk.top()->setExpr($1);
         $$ = $1;
     }
     | InitValList COMMA InitVal {
-        // if(stk.top()->getExpr() == nullptr)
-        //     stk.top()->setExpr($3);
-        // else
-        //     stk.top()->getExpr()->setNext($3);
         $$ = $1;
     }
     ;
@@ -625,8 +584,6 @@ ConstInitValList
         $$ = $1;
     }
     | ConstInitValList COMMA ConstInitVal {
-        ExprNode* temp = $1;
-        temp->setNext($3);
         $$ = $1;
     }
     ;
@@ -679,7 +636,18 @@ FuncFParam
     | Type ID FuncArrayIndices {
         // 这里也需要求值
         SymbolEntry* se;
-        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        ExprNode* temp = $3;
+        Type* arr = TypeSystem::intType;
+        std::stack<ExprNode*> stk;
+        while(temp){
+            stk.push(temp);
+            temp = (ExprNode*)(temp->getNext());
+        }
+        while(!stk.empty()){
+            arr = new ArrayType(arr, stk.top()->getValue());
+            stk.pop();
+        }
+        se = new IdentifierSymbolEntry(arr, $2, identifiers->getLevel());
         identifiers->install($2, se);
         $$ = new DeclStmt(new Id(se));
         delete []$2;
