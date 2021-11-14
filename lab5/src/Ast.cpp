@@ -167,11 +167,10 @@ void CallExpr::output(int level) {
     scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
     fprintf(yyout, "%*cCallExpr\tfunction name: %s\tscope: %d\ttype: %s\n",
             level, ' ', name.c_str(), scope, type.c_str());
-    Node* temp = param;        
-    while(temp){
+    Node* temp = param;
+    while (temp) {
         temp->output(level + 4);
         temp = temp->getNext();
-
     }
 }
 
@@ -181,6 +180,8 @@ void Constant::output(int level) {
     value = symbolEntry->toStr();
     fprintf(yyout, "%*cIntegerLiteral\tvalue: %s\ttype: %s\n", level, ' ',
             value.c_str(), type.c_str());
+    if (arrayChild)
+        arrayChild->output(level + 4);
 }
 
 int Constant::getValue() {
@@ -201,6 +202,8 @@ void Id::output(int level) {
     scope = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getScope();
     fprintf(yyout, "%*cId\tname: %s\tscope: %d\ttype: %s\n", level, ' ',
             name.c_str(), scope, type.c_str());
+    if (arrayPosition)
+        arrayPosition->output(level + 4);
 }
 
 void InitValueListExpr::output(int level) {
@@ -234,7 +237,7 @@ bool InitValueListExpr::isFull() {
 
 void CompoundStmt::output(int level) {
     fprintf(yyout, "%*cCompoundStmt\n", level, ' ');
-    if(stmt)
+    if (stmt)
         stmt->output(level + 4);
 }
 
@@ -249,6 +252,9 @@ void DeclStmt::output(int level) {
     id->output(level + 4);
     if (expr)
         expr->output(level + 4);
+    if (this->getNext()) {
+        this->getNext()->output(level);
+    }
 }
 
 void IfStmt::output(int level) {
@@ -279,13 +285,13 @@ void ContinueStmt::output(int level) {
 
 void ReturnStmt::output(int level) {
     fprintf(yyout, "%*cReturnStmt\n", level, ' ');
-    if(retValue!=nullptr)
+    if (retValue != nullptr)
         retValue->output(level + 4);
 }
 
 void AssignStmt::output(int level) {
     fprintf(yyout, "%*cAssignStmt\n", level, ' ');
-    
+
     lval->output(level + 4);
     expr->output(level + 4);
 }
@@ -301,10 +307,8 @@ void FunctionDef::output(int level) {
     type = se->getType()->toStr();
     fprintf(yyout, "%*cFunctionDefine\tfunction name: %s\ttype: %s\n", level,
             ' ', name.c_str(), type.c_str());
-    Node* temp = decl;
-    while (temp) {
-        temp->output(level + 4);
-        temp = temp->getNext();
+    if (decl) {
+        decl->output(level + 4);
     }
     stmt->output(level + 4);
 }

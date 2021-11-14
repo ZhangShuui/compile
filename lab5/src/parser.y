@@ -84,7 +84,6 @@ LVal
         delete []$1;
     }
     | ID ArrayIndices{
-        //拿到一维数组里的值
         SymbolEntry* se;
         se = identifiers->lookup($1);
         if(se == nullptr)
@@ -94,17 +93,16 @@ LVal
             assert(se != nullptr);
         }
         $$ = new Id(se);
-        
         delete []$1;
         //将$2的值放到
-        ExprNode* temp = $2;
-        Constant * tempposition=$$->Arrayposition;
-        while(temp){
-            SymbolEntry* se=new ConstantSymbolEntry(IntType,temp->getValue());
-            tempposition=new Constant(se);
-            tempposition=tempposition->Arraychild;
-            temp = (ExprNode*)(temp->getNext());
-        }
+        // ExprNode* temp = $2;
+        // Constant* tempposition=$$->Arrayposition;
+        // while(temp){
+        //     SymbolEntry* se=new ConstantSymbolEntry(IntType,temp->getValue());
+        //     tempposition=new Constant(se);
+        //     tempposition=tempposition->Arraychild;
+        //     temp = (ExprNode*)(temp->getNext());
+        // }
         
 
     }
@@ -493,28 +491,30 @@ ArrayIndices
     ;
 InitVal 
     : Exp {
-        arrayValue[idx++] = $1->getValue();
         $$ = $1;
-        Type* arrTy = stk.top()->getSymbolEntry()->getType();
-        if(arrTy == TypeSystem::intType)
-            stk.top()->addExpr($1);
-        else
-            while(arrTy){
-                if(((ArrayType*)arrTy)->getElementType() != TypeSystem::intType){
-                    arrTy = ((ArrayType*)arrTy)->getElementType();
-                    SymbolEntry* se = new ConstantSymbolEntry(arrTy);
-                    InitValueListExpr* list = new InitValueListExpr(se);
-                    stk.top()->addExpr(list);
-                    stk.push(list);
-                }else{
-                    stk.top()->addExpr($1);
-                    while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
-                        arrTy = ((ArrayType*)arrTy)->getArrayType();
-                        stk.pop();
+        if(!stk.empty()){
+            arrayValue[idx++] = $1->getValue();
+            Type* arrTy = stk.top()->getSymbolEntry()->getType();
+            if(arrTy == TypeSystem::intType)
+                stk.top()->addExpr($1);
+            else
+                while(arrTy){
+                    if(((ArrayType*)arrTy)->getElementType() != TypeSystem::intType){
+                        arrTy = ((ArrayType*)arrTy)->getElementType();
+                        SymbolEntry* se = new ConstantSymbolEntry(arrTy);
+                        InitValueListExpr* list = new InitValueListExpr(se);
+                        stk.top()->addExpr(list);
+                        stk.push(list);
+                    }else{
+                        stk.top()->addExpr($1);
+                        while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+                            arrTy = ((ArrayType*)arrTy)->getArrayType();
+                            stk.pop();
+                        }
+                        break;
                     }
-                    break;
                 }
-            }          
+        }         
     }
     | LBRACE RBRACE {
         SymbolEntry* se;

@@ -269,6 +269,23 @@ LINECOMMENT \/\/[^\n]*
     return ID;
 }
 
+"getint" {
+    if(dump_tokens)
+        DEBUG_FOR_LAB4(yytext);
+    char *lexeme;
+    lexeme = new char[strlen(yytext) + 1];
+    strcpy(lexeme, yytext);
+    yylval.strtype = lexeme;
+    std::vector<Type*> vec;
+    Type* funcType = new FunctionType(TypeSystem::intType, vec);
+    SymbolTable* st = identifiers;
+    while(st->getPrev())
+        st = st->getPrev();
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    st->install(yytext, se);
+    return ID;
+}
+
 {ID} {
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
