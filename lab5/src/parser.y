@@ -40,7 +40,7 @@
 %token CONST
 %token RETURN CONTINUE BREAK
 
-%type<stmttype> Stmts Stmt AssignStmt ExprStmt BlockStmt IfStmt WhileStmt BreakStmt ContinueStmt ReturnStmt DeclStmt FuncDef ConstDeclStmt VarDeclStmt ConstDefList VarDef ConstDef VarDefList FuncFParam FuncFParams MaybeFuncFParams
+%type<stmttype> Stmts Stmt AssignStmt ExprStmt BlockStmt IfStmt WhileStmt BreakStmt ContinueStmt ReturnStmt DeclStmt FuncDef ConstDeclStmt VarDeclStmt ConstDefList VarDef ConstDef VarDefList FuncFParam FuncFParams MaybeFuncFParams BlankStmt
 %type<exprtype> Exp AddExp Cond LOrExp PrimaryExp LVal RelExp LAndExp MulExp ConstExp EqExp UnaryExp InitVal ConstInitVal InitValList ConstInitValList FuncArrayIndices FuncRParams ArrayIndices
 %type<type> Type
 
@@ -62,6 +62,7 @@ Stmt
     : AssignStmt {$$=$1;}
     | ExprStmt {$$=$1;}
     | BlockStmt {$$=$1;}
+    | BlankStmt {$$=$1;}
     | IfStmt {$$=$1;}
     | WhileStmt {$$=$1;}
     | BreakStmt {$$=$1;}
@@ -104,6 +105,11 @@ AssignStmt
 ExprStmt
     : Exp SEMICOLON {
         $$ = new ExprStmt($1);
+    }
+    ;
+BlankStmt
+    : SEMICOLON {
+        $$ = new BlankStmt();
     }
     ;
 BlockStmt

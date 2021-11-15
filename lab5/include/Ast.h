@@ -163,6 +163,12 @@ class DeclStmt : public StmtNode {
     Id* getId() { return id; };
 };
 
+class BlankStmt : public StmtNode {
+   public:
+    BlankStmt(){};
+    void output(int level);
+};
+
 class IfStmt : public StmtNode {
    private:
     ExprNode* cond;

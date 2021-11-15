@@ -330,7 +330,8 @@ LINECOMMENT \/\/[^\n]*
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
     vec.push_back(TypeSystem::intType);
-    vec.push_back(TypeSystem::ArrayType);
+    ArrayType* arr = new ArrayType(TypeSystem::intType, 0);
+    vec.push_back(arr);
     Type* funcType = new FunctionType(TypeSystem::voidType, vec);
     SymbolTable* st = identifiers;
     while(st->getPrev())
@@ -349,8 +350,9 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
-    vec.push_back(TypeSystem::ArrayType);
-    Type* funcType = new FunctionType(TypeSystem::IntType, vec);
+    ArrayType* arr = new ArrayType(TypeSystem::intType, 0);
+    vec.push_back(arr);
+    Type* funcType = new FunctionType(TypeSystem::intType, vec);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -368,7 +370,8 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
-    vec.push_back(TypeSystem::StringType);
+    StringType* str = new StringType(0);
+    vec.push_back(str);
     Type* funcType = new FunctionType(TypeSystem::voidType, vec);
     SymbolTable* st = identifiers;
     while(st->getPrev())

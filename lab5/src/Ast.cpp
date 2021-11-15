@@ -261,6 +261,10 @@ void DeclStmt::output(int level) {
     }
 }
 
+void BlankStmt::output(int level) {
+    fprintf(yyout, "%*cBlankStmt\n", level, ' ');
+}
+
 void IfStmt::output(int level) {
     fprintf(yyout, "%*cIfStmt\n", level, ' ');
     cond->output(level + 4);
