@@ -422,10 +422,10 @@ ConstDef
             vec.push_back(temp->getValue());
             temp = (ExprNode*)(temp->getNext());
         }
-        Type* type = TypeSystem::intType;
+        Type* type = TypeSystem::constIntType;
         Type* temp1;
         for(auto it = vec.rbegin(); it != vec.rend(); it++) {
-            temp1 = new ArrayType(type, *it);
+            temp1 = new ArrayType(type, *it, true);
             if(type->isArray())
                 ((ArrayType*)type)->setArrayType(temp1);
             type = temp1;
@@ -540,35 +540,88 @@ InitVal
     ;
 
 ConstInitVal
-    : ConstExp {$$=$1;}
+    : ConstExp {
+        $$ = $1;
+        if(!stk.empty()){
+            arrayValue[idx++] = $1->getValue();
+            Type* arrTy = stk.top()->getSymbolEntry()->getType();
+            if(arrTy == TypeSystem::constIntType)
+                stk.top()->addExpr($1);
+            else
+                while(arrTy){
+                    if(((ArrayType*)arrTy)->getElementType() != TypeSystem::constIntType){
+                        arrTy = ((ArrayType*)arrTy)->getElementType();
+                        SymbolEntry* se = new ConstantSymbolEntry(arrTy);
+                        InitValueListExpr* list = new InitValueListExpr(se);
+                        stk.top()->addExpr(list);
+                        stk.push(list);
+                    }else{
+                        stk.top()->addExpr($1);
+                        while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+                            arrTy = ((ArrayType*)arrTy)->getArrayType();
+                            stk.pop();
+                        }
+                        break;
+                    }
+                }
+        }
+    }
     | LBRACE RBRACE {
-        SymbolEntry* se = new ConstantSymbolEntry(arrayType);
-        $$ = new InitValueListExpr(se);
+        SymbolEntry* se;
+        ExprNode* list;
+        if(stk.empty()){
+            // 如果只用一个{}初始化数组，那么栈一定为空
+            // 此时也没必要再加入栈了
+            memset(arrayValue, 0, arrayType->getSize());
+            idx += arrayType->getSize() / TypeSystem::constIntType->getSize();
+            se = new ConstantSymbolEntry(arrayType);
+            list = new InitValueListExpr(se);
+        }else{
+            // 栈不空说明肯定不是只有{}
+            // 此时需要确定{}到底占了几个元素
+            Type* type = ((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType();
+            int len = type->getSize() / TypeSystem::constIntType->getSize();
+            memset(arrayValue + idx, 0, type->getSize());
+            idx += len;
+            se = new ConstantSymbolEntry(type);
+            list = new InitValueListExpr(se);
+            stk.top()->addExpr(list);
+            while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+                stk.pop();
+            }
+        }
+        $$ = list;
     }
     | LBRACE {
-        // SymbolEntry* se;
-        // if(arrayType->getElementType() == TypeSystem::intType){
-        //     if(cnt)
-        //         se = new ConstantSymbolEntry(TypeSystem::voidType);
-        //     else
-        //         se = new ConstantSymbolEntry(arrayType);
-        //     cnt++;
-        // }else{
-        //     se = new ConstantSymbolEntry(arrayType);
-        //     arrayType = (ArrayType*)(arrayType->getElementType());
-        // }
-        // $<se>$ = se;
+        SymbolEntry* se;
+        if(!stk.empty())
+            arrayType = (ArrayType*)(((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
+        se = new ConstantSymbolEntry(arrayType);
+        if(arrayType->getElementType() != TypeSystem::intType){
+            arrayType = (ArrayType*)(arrayType->getElementType());
+        }
+        InitValueListExpr* expr = new InitValueListExpr(se);
+        if(!stk.empty())
+            stk.top()->addExpr(expr);
+        stk.push(expr);
+        $<exprtype>$ = expr;
+        leftCnt++;
     } 
       ConstInitValList RBRACE {
-        // $$ = new InitValueListExpr($<se>2, $3);
-        // if(cnt > 1){
-        //     cnt--;
-        // }else{
-        //     if(cnt)
-        //         cnt--;
-        //     else
-        //         arrayType = (ArrayType*)(arrayType->getArrayType());
-        // }
+        leftCnt--;
+        while(stk.top() != $<exprtype>2 && stk.size() > (long unsigned int)(leftCnt + 1))
+            stk.pop();
+        if(stk.top() == $<exprtype>2)
+            stk.pop();
+        $$ = $<exprtype>2;
+        if(!stk.empty())
+            while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+                stk.pop();
+            }
+        while(idx % (((ArrayType*)($$->getSymbolEntry()->getType()))->getSize()/ sizeof(int)) !=0 )
+            arrayValue[idx++] = 0;
+        if(!stk.empty())
+            arrayType = (ArrayType*)(((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
     }
     ;
 InitValList
