@@ -43,8 +43,10 @@ class ConstantSymbolEntry : public SymbolEntry {
    public:
     ConstantSymbolEntry(Type* type, int value);
     ConstantSymbolEntry(Type* type, std::string strValue);
+    ConstantSymbolEntry(Type* type);
     virtual ~ConstantSymbolEntry(){};
-    int getValue() const { return value; };
+    int getValue() const;
+    std::string getStrValue() const;
     std::string toStr();
     // You can add any function you need here.
 };
@@ -81,7 +83,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     bool initial;
     int* arrayValue;
     Operand* addr;  // The address of the identifier.
-    // You can add any field you need here.
+                    // You can add any field you need here.
 
    public:
     IdentifierSymbolEntry(Type* type, std::string name, int scope);

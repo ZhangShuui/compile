@@ -55,6 +55,8 @@ class ExprNode : public Node {
     bool isExpr() const { return kind == EXPR; };
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
     SymbolEntry* getSymbolEntry() { return symbolEntry; };
+    void typeCheck();
+    void genCode();
 };
 
 class BinaryExpr : public ExprNode {
@@ -83,8 +85,8 @@ class BinaryExpr : public ExprNode {
         dst = new Operand(se);
     };
     void output(int level);
-    void typeCheck();
     int getValue();
+    void typeCheck();
     void genCode();
 };
 
@@ -99,6 +101,8 @@ class UnaryExpr : public ExprNode {
         : ExprNode(se), op(op), expr(expr){};
     void output(int level);
     int getValue();
+    void typeCheck();
+    void genCode();
 };
 
 class CallExpr : public ExprNode {
@@ -109,6 +113,8 @@ class CallExpr : public ExprNode {
     CallExpr(SymbolEntry* se, ExprNode* param = nullptr)
         : ExprNode(se), param(param){};
     void output(int level);
+    void typeCheck();
+    void genCode();
 };
 
 class Constant : public ExprNode {
@@ -159,6 +165,8 @@ class InitValueListExpr : public ExprNode {
     void addExpr(ExprNode* expr);
     bool isEmpty() { return childCnt == 0; };
     bool isFull();
+    void typeCheck();
+    void genCode();
 };
 
 class StmtNode : public Node {};
@@ -202,6 +210,8 @@ class BlankStmt : public StmtNode {
    public:
     BlankStmt(){};
     void output(int level);
+    void typeCheck();
+    void genCode();
 };
 
 class IfStmt : public StmtNode {
@@ -239,18 +249,24 @@ class WhileStmt : public StmtNode {
    public:
     WhileStmt(ExprNode* cond, StmtNode* stmt) : cond(cond), stmt(stmt){};
     void output(int level);
+    void typeCheck();
+    void genCode();
 };
 
 class BreakStmt : public StmtNode {
    public:
     BreakStmt(){};
     void output(int level);
+        void typeCheck();
+    void genCode();
 };
 
 class ContinueStmt : public StmtNode {
    public:
     ContinueStmt(){};
     void output(int level);
+    void typeCheck();
+    void genCode();
 };
 
 class ReturnStmt : public StmtNode {
@@ -283,6 +299,8 @@ class ExprStmt : public StmtNode {
    public:
     ExprStmt(ExprNode* expr) : expr(expr){};
     void output(int level);
+    void typeCheck();
+    void genCode();
 };
 
 class FunctionDef : public StmtNode {
