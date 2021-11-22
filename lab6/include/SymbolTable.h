@@ -11,6 +11,7 @@ class Operand;
 class SymbolEntry {
    private:
     int kind;
+    SymbolEntry* next;
 
    protected:
     enum { CONSTANT, VARIABLE, TEMPORARY };
@@ -25,6 +26,9 @@ class SymbolEntry {
     Type* getType() { return type; };
     void setType(Type* type) { this->type = type; };
     virtual std::string toStr() = 0;
+    bool setNext(SymbolEntry* se);
+    SymbolEntry* getNext() const { return next; };
+
     // You can add any function you need here.
 };
 
@@ -143,7 +147,7 @@ class SymbolTable {
    public:
     SymbolTable();
     SymbolTable(SymbolTable* prev);
-    void install(std::string name, SymbolEntry* entry);
+    bool install(std::string name, SymbolEntry* entry);
     SymbolEntry* lookup(std::string name);
     SymbolTable* getPrev() { return prev; };
     int getLevel() { return level; };

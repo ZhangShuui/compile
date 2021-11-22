@@ -21,6 +21,7 @@ class Type {
     bool isPtr() const { return kind == PTR; };
     bool isArray() const { return kind == ARRAY; };
     bool isString() const { return kind == STRING; };
+    int getKind() const { return kind; };
     int getSize() const { return size; };
 };
 
@@ -52,6 +53,7 @@ class FunctionType : public Type {
     void setParamsType(std::vector<Type*> paramsType) {
         this->paramsType = paramsType;
     };
+    std::vector<Type*> getParamsType() { return paramsType; };
     Type* getRetType() { return returnType; };
     std::string toStr();
 };
@@ -75,6 +77,7 @@ class ArrayType : public Type {
     int getLength() const { return length; };
     Type* getElementType() const { return elementType; };
     void setArrayType(Type* arrayType) { this->arrayType = arrayType; };
+    bool isConst() const { return constant; };
     Type* getArrayType() const { return arrayType; };
 };
 

@@ -13,6 +13,9 @@
     std::stack<InitValueListExpr*> stk;
     InitValueListExpr* top;
     int leftCnt = 0;
+    std::stack<int> whileStk;
+    int whileCnt = 0;
+    #include <iostream>
 }
 
 %code requires {
@@ -59,28 +62,34 @@ Stmts
     }
     ;
 Stmt
-    : AssignStmt {$$=$1;}
-    | ExprStmt {$$=$1;}
+    : AssignStmt {
+        $$=$1;
+    }
+    | ExprStmt {$$ = $1;}
     | BlockStmt {$$=$1;}
-    | BlankStmt {$$=$1;}
-    | IfStmt {$$=$1;}
-    | WhileStmt {$$=$1;}
-    | BreakStmt {$$=$1;}
-    | ContinueStmt {$$=$1;}
-    | ReturnStmt {$$=$1;}
-    | DeclStmt {$$=$1;}
-    | FuncDef {$$=$1;}
+    | BlankStmt {$$ = $1;}
+    | IfStmt {$$ = $1;}
+    | WhileStmt {$$ = $1;}
+    | BreakStmt {
+        if(!whileCnt)
+            fprintf(stderr, "\'break\' statement not in while statement\n");
+        $$=$1;
+    }
+    | ContinueStmt {
+        if(!whileCnt)
+            fprintf(stderr, "\'continue\' statement not in while statement\n");
+        $$=$1;
+    }
+    | ReturnStmt {$$ = $1;}
+    | DeclStmt {$$ = $1;}
+    | FuncDef {$$ = $1;}
     ;
 LVal
     : ID {
         SymbolEntry* se;
         se = identifiers->lookup($1);
         if(se == nullptr)
-        {
             fprintf(stderr, "identifier \"%s\" is undefined\n", (char*)$1);
-            delete [](char*)$1;
-            assert(se != nullptr);
-        }
         $$ = new Id(se);
         delete []$1;
     }
@@ -88,11 +97,7 @@ LVal
         SymbolEntry* se;
         se = identifiers->lookup($1);
         if(se == nullptr)
-        {
             fprintf(stderr, "identifier \"%s\" is undefined\n", (char*)$1);
-            delete [](char*)$1;
-            assert(se != nullptr);
-        }
         $$ = new Id(se, $2);
         delete []$1;
     }
@@ -119,6 +124,7 @@ BlockStmt
       Stmts RBRACE {
         // midrule actions https://www.gnu.org/software/bison/manual/html_node/Using-Midrule-Actions.html
         $$ = new CompoundStmt($3);
+
         SymbolTable* top = identifiers;
         identifiers = identifiers->getPrev();
         delete top;
@@ -137,8 +143,12 @@ IfStmt
     }
     ;
 WhileStmt
-    : WHILE LPAREN Cond RPAREN Stmt {
-        $$ = new WhileStmt($3, $5);
+    : WHILE LPAREN Cond RPAREN {
+        whileCnt++;
+    }
+    Stmt {
+        $$ = new WhileStmt($3, $6);
+        whileCnt--;
     }
     ;
 BreakStmt
@@ -198,22 +208,14 @@ UnaryExp
         SymbolEntry* se;
         se = identifiers->lookup($1);
         if(se == nullptr)
-        {
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
-            delete [](char*)$1;
-            assert(se != nullptr);
-        }
         $$ = new CallExpr(se, $3);
     }
     | ID LPAREN RPAREN {
         SymbolEntry* se;
         se = identifiers->lookup($1);
         if(se == nullptr)
-        {
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)$1);
-            delete [](char*)$1;
-            assert(se != nullptr);
-        }
         $$ = new CallExpr(se);
     }
     | ADD UnaryExp {$$ = $2;}
@@ -252,7 +254,9 @@ AddExp
     }
     ;
 RelExp
-    : AddExp {$$ = $1;}
+    : AddExp {
+        $$ = $1;
+    }
     | RelExp LESS AddExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
         $$ = new BinaryExpr(se, BinaryExpr::LESS, $1, $3);
@@ -343,8 +347,10 @@ VarDef
     : ID {
         SymbolEntry* se;
         se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
-        identifiers->install($1, se);
+        if(!identifiers->install($1, se))
+            fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         $$ = new DeclStmt(new Id(se));
+        std::cout << "ok\n";
         delete []$1;
     }
     | ID ArrayIndices {
@@ -368,14 +374,16 @@ VarDef
         se = new IdentifierSymbolEntry(type, $1, identifiers->getLevel());
         int *p = new int[type->getSize()];
         ((IdentifierSymbolEntry*)se)->setArrayValue(p);
-        identifiers->install($1, se);
+        if(!identifiers->install($1, se))
+            fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         $$ = new DeclStmt(new Id(se));
         delete []$1;
     }
     | ID ASSIGN InitVal {
         SymbolEntry* se;
         se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
-        identifiers->install($1, se);
+        if(!identifiers->install($1, se))
+            fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         // 这里要不要存值不确定
         ((IdentifierSymbolEntry*)se)->setValue($3->getValue());
         $$ = new DeclStmt(new Id(se), $3);
@@ -406,7 +414,8 @@ VarDef
     }
       InitVal {
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
-        identifiers->install($1, $<se>4);
+        if(!identifiers->install($1, $<se>4))
+            fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         $$ = new DeclStmt(new Id($<se>4), $5);
         delete []$1;
     }
@@ -415,6 +424,8 @@ ConstDef
     : ID ASSIGN ConstInitVal {
         SymbolEntry* se;
         se = new IdentifierSymbolEntry(TypeSystem::constIntType, $1, identifiers->getLevel());
+        if(!identifiers->install($1, se))
+            fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         identifiers->install($1, se);
         ((IdentifierSymbolEntry*)se)->setValue($3->getValue());
         $$ = new DeclStmt(new Id(se), $3);
@@ -445,6 +456,8 @@ ConstDef
     }
       ConstInitVal {
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
+        if(!identifiers->install($1, $<se>4))
+            fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         identifiers->install($1, $<se>4);
         $$ = new DeclStmt(new Id($<se>4), $5);
         delete []$1;
@@ -461,6 +474,12 @@ ArrayIndices
     ;
 InitVal 
     : Exp {
+        if(!$1->getType()->isInt()){
+            fprintf(stderr,
+                "cannot initialize a variable of type \'int\' with an rvalue "
+                "of type \'%s\'\n",
+                $1->getType()->toStr().c_str());
+        }
         $$ = $1;
         if(!stk.empty()){
             arrayValue[idx++] = $1->getValue();
@@ -661,13 +680,13 @@ FuncDef
         }
         funcType = new FunctionType($1, vec);
         SymbolEntry* se = new IdentifierSymbolEntry(funcType, $2, identifiers->getPrev()->getLevel());
-        identifiers->getPrev()->install($2, se);
+        if(!identifiers->getPrev()->install($2, se)){
+            fprintf(stderr, "redefinition of \'%s %s\'\n", $2, se->getType()->toStr().c_str());
+        }
+        $<se>$ = se; 
     } 
     BlockStmt {
-        SymbolEntry* se;
-        se = identifiers->lookup($2);
-        assert(se != nullptr);
-        $$ = new FunctionDef(se, (DeclStmt*)$5, $8);
+        $$ = new FunctionDef($<se>7, (DeclStmt*)$5, $8);
         SymbolTable* top = identifiers;
         identifiers = identifiers->getPrev();
         delete top;
