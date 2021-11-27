@@ -17,9 +17,9 @@ Type* TypeSystem::boolType = &commonBool;
 std::string IntType::toStr() {
     std::ostringstream buffer;
     if (constant)
-        buffer << "const int";
+        buffer << "i";
     else
-        buffer << "int";
+        buffer << "i";
     buffer << size;
     return buffer.str();
 }

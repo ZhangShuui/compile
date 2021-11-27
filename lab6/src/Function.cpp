@@ -36,8 +36,10 @@ void Function::output() const
     std::list<BasicBlock *> q;
     q.push_back(entry);
     v.insert(entry);
+    
     while (!q.empty())
     {
+        
         auto bb = q.front();
         q.pop_front();
         bb->output();
