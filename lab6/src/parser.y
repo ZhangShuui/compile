@@ -220,8 +220,8 @@ UnaryExp
     }
     | ADD UnaryExp {$$ = $2;}
     | SUB UnaryExp {
-        // 这里用不用temp
-        $$ = new UnaryExpr(nullptr, UnaryExpr::SUB, $2);
+        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        $$ = new UnaryExpr(se, UnaryExpr::SUB, $2);
     }
     | NOT UnaryExp {
         $$ = new UnaryExpr(nullptr, UnaryExpr::NOT, $2);
@@ -277,11 +277,11 @@ RelExp
 EqExp
     : RelExp {$$ = $1;}
     | EqExp EQUAL RelExp {
-        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         $$ = new BinaryExpr(se, BinaryExpr::EQUAL, $1, $3);
     }
     | EqExp NOTEQUAL RelExp {
-        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         $$ = new BinaryExpr(se, BinaryExpr::NOTEQUAL, $1, $3);
     }
     ;
@@ -350,7 +350,6 @@ VarDef
         if(!identifiers->install($1, se))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         $$ = new DeclStmt(new Id(se));
-        std::cout << "ok\n";
         delete []$1;
     }
     | ID ArrayIndices {
@@ -673,12 +672,14 @@ FuncDef
     LPAREN MaybeFuncFParams RPAREN {
         Type* funcType;
         std::vector<Type*> vec;
+        std::vector<SymbolEntry*> vec1;
         DeclStmt* temp = (DeclStmt*)$5;
         while(temp){
             vec.push_back(temp->getId()->getSymbolEntry()->getType());
+            vec1.push_back(temp->getId()->getSymbolEntry());
             temp = (DeclStmt*)(temp->getNext());
         }
-        funcType = new FunctionType($1, vec);
+        funcType = new FunctionType($1, vec, vec1);
         SymbolEntry* se = new IdentifierSymbolEntry(funcType, $2, identifiers->getPrev()->getLevel());
         if(!identifiers->getPrev()->install($2, se)){
             fprintf(stderr, "redefinition of \'%s %s\'\n", $2, se->getType()->toStr().c_str());
@@ -701,13 +702,17 @@ FuncFParams
         $$ = $1;
         $$->setNext($3);
     }
-    | FuncFParam {$$ = $1;}
+    | FuncFParam {
+        $$ = $1;
+    }
     ;
 FuncFParam
     : Type ID {
         SymbolEntry* se;
         se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
         identifiers->install($2, se);
+        ((IdentifierSymbolEntry*)se)->setLabel();
+        ((IdentifierSymbolEntry*)se)->setAddr(new Operand(se));
         $$ = new DeclStmt(new Id(se));
         delete []$2;
     }

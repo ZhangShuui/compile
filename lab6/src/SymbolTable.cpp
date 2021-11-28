@@ -69,6 +69,7 @@ IdentifierSymbolEntry::IdentifierSymbolEntry(Type* type,
     : SymbolEntry(type, SymbolEntry::VARIABLE), name(name) {
     this->scope = scope;
     this->initial = false;
+    this->label = -1;
 }
 
 void IdentifierSymbolEntry::setValue(int value) {
@@ -98,7 +99,12 @@ void IdentifierSymbolEntry::setArrayValue(int* arrayValue) {
 }
 
 std::string IdentifierSymbolEntry::toStr() {
-    return name;
+    std::ostringstream buffer;
+    if (label < 0)
+        buffer << '@' << name;
+    else
+        buffer << "%t" << label;
+    return buffer.str();
 }
 
 TemporarySymbolEntry::TemporarySymbolEntry(Type* type, int label)
@@ -108,7 +114,7 @@ TemporarySymbolEntry::TemporarySymbolEntry(Type* type, int label)
 
 std::string TemporarySymbolEntry::toStr() {
     std::ostringstream buffer;
-    buffer << "t" << label;
+    buffer << "%t" << label;
     return buffer.str();
 }
 

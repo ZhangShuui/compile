@@ -5,6 +5,7 @@
 #include "SymbolTable.h"
 #include "Type.h"
 #include "Unit.h"
+extern Unit unit;
 
 #include <iostream>
 
@@ -51,42 +52,41 @@ void Ast::genCode(Unit* unit) {
     root->genCode();
 }
 
-
-
 void FunctionDef::genCode() {
     Unit* unit = builder->getUnit();
     Function* func = new Function(unit, se);
     BasicBlock* entry = func->getEntry();
     // set the insert point to the entry basicblock of this function.
     builder->setInsertBB(entry);
-    if(decl)
+    if (decl) {
         decl->genCode();
-    //function中的stmt节点是用compoundstmt进行初始化的
-    if(stmt)
+    }
+    // function中的stmt节点是用compoundstmt进行初始化的
+    if (stmt)
         stmt->genCode();
 
     /**
      * Construct control flow graph. You need do set successors and predecessors
      * for each basic block. Todo
      */
-    for (auto block=func->begin();block!=func->end();block++)
-    {
+    for (auto block = func->begin(); block != func->end(); block++) {
         //获取该块的最后一条指令
-        Instruction *last=(*block)->rbegin();
-        if(last->isCond())
-        {
+        Instruction* last = (*block)->rbegin();
+        if (last->isCond()) {
             BasicBlock *truebranch, *falsebranch;
-            truebranch = dynamic_cast<CondBrInstruction*>(last)->getTrueBranch();
-            falsebranch = dynamic_cast<CondBrInstruction*>(last)->getFalseBranch();
+            truebranch =
+                dynamic_cast<CondBrInstruction*>(last)->getTrueBranch();
+            falsebranch =
+                dynamic_cast<CondBrInstruction*>(last)->getFalseBranch();
             (*block)->addSucc(truebranch);
             (*block)->addSucc(falsebranch);
 
             truebranch->addPred(*block);
             falsebranch->addPred(*block);
-        }
-        else if(last->isUncond())//无条件跳转指令可获取跳转的目标块
+        } else if (last->isUncond())  //无条件跳转指令可获取跳转的目标块
         {
-            BasicBlock *dst=dynamic_cast<UncondBrInstruction*>(last)->getBranch();
+            BasicBlock* dst =
+                dynamic_cast<UncondBrInstruction*>(last)->getBranch();
             (*block)->addSucc(dst);
             dst->addPred(*block);
         }
@@ -182,11 +182,11 @@ void BinaryExpr::genCode() {
         // Todo
         BasicBlock* trueBB = new BasicBlock(func);
         expr1->genCode();
-        backPatch(expr1->falseList(),trueBB);
+        backPatch(expr1->falseList(), trueBB);
         builder->setInsertBB(trueBB);
         expr2->genCode();
-        true_list=merge(expr1->trueList(),expr2->trueList());
-        false_list=expr2->falseList();
+        true_list = merge(expr1->trueList(), expr2->trueList());
+        false_list = expr2->falseList();
 
     } else if (op >= LESS && op <= NOTEQUAL) {
         // Todo
@@ -195,38 +195,37 @@ void BinaryExpr::genCode() {
         Operand* src1 = expr1->getOperand();
         Operand* src2 = expr2->getOperand();
         int cmpopcode;
-        switch(op){
+        switch (op) {
             case LESS:
-                cmpopcode=CmpInstruction::L;
+                cmpopcode = CmpInstruction::L;
                 break;
             case LESSEQUAL:
-                cmpopcode=CmpInstruction::LE;
+                cmpopcode = CmpInstruction::LE;
                 break;
             case GREATER:
-                cmpopcode=CmpInstruction::G;
+                cmpopcode = CmpInstruction::G;
                 break;
             case GREATEREQUAL:
-                cmpopcode=CmpInstruction::GE;
+                cmpopcode = CmpInstruction::GE;
                 break;
             case EQUAL:
-                cmpopcode=CmpInstruction::E;
+                cmpopcode = CmpInstruction::E;
                 break;
             case NOTEQUAL:
-                cmpopcode=CmpInstruction::NE;
+                cmpopcode = CmpInstruction::NE;
                 break;
         }
-        new CmpInstruction(cmpopcode,dst,src1,src2,bb);
+        new CmpInstruction(cmpopcode, dst, src1, src2, bb);
         //
         BasicBlock *truebb, *falsebb, *tempbb;
         //临时假块
         truebb = new BasicBlock(func);
         falsebb = new BasicBlock(func);
         tempbb = new BasicBlock(func);
-        
-        true_list.push_back(new CondBrInstruction(truebb,tempbb,dst,bb));
 
-        false_list.push_back(new UncondBrInstruction(falsebb,tempbb));
-        
+        true_list.push_back(new CondBrInstruction(truebb, tempbb, dst, bb));
+
+        false_list.push_back(new UncondBrInstruction(falsebb, tempbb));
 
     } else if (op >= ADD && op <= MOD) {
         expr1->genCode();
@@ -289,29 +288,29 @@ void IfStmt::genCode() {
 
 void IfElseStmt::genCode() {
     Function* func;
-    BasicBlock *then_bb, *else_bb, *end_bb/*, *bb*/;
-    //bb = builder->getInsertBB();
+    BasicBlock *then_bb, *else_bb, *end_bb /*, *bb*/;
+    // bb = builder->getInsertBB();
     func = builder->getInsertBB()->getParent();
     then_bb = new BasicBlock(func);
     else_bb = new BasicBlock(func);
     end_bb = new BasicBlock(func);
 
     cond->genCode();
-    //Operand* IfElsecond = cond->getOperand();
+    // Operand* IfElsecond = cond->getOperand();
     backPatch(cond->trueList(), then_bb);
     backPatch(cond->falseList(), else_bb);
 
-    //new CondBrInstruction(then_bb,else_bb,IfElsecond,bb);
+    // new CondBrInstruction(then_bb,else_bb,IfElsecond,bb);
 
     builder->setInsertBB(then_bb);
     thenStmt->genCode();
-    then_bb=builder->getInsertBB();
-    new UncondBrInstruction(end_bb,then_bb);
+    then_bb = builder->getInsertBB();
+    new UncondBrInstruction(end_bb, then_bb);
 
     builder->setInsertBB(else_bb);
     elseStmt->genCode();
-    else_bb=builder->getInsertBB();
-    new UncondBrInstruction(end_bb,else_bb);
+    else_bb = builder->getInsertBB();
+    new UncondBrInstruction(end_bb, else_bb);
 
     builder->setInsertBB(end_bb);
 }
@@ -338,7 +337,8 @@ void DeclStmt::genCode() {
         addr_se->setType(new PointerType(se->getType()));
         addr = new Operand(addr_se);
         se->setAddr(addr);
-    } else if (se->isLocal()) {
+        unit.insertGlobal(se);
+    } else if (se->isLocal() || se->isParam()) {
         Function* func = builder->getInsertBB()->getParent();
         BasicBlock* entry = func->getEntry();
         Instruction* alloca;
@@ -348,21 +348,41 @@ void DeclStmt::genCode() {
         type = new PointerType(se->getType());
         addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel());
         addr = new Operand(addr_se);
-        alloca = new AllocaInstruction(
-            addr, se);  // allocate space for local id in function stack.
+        alloca = new AllocaInstruction(addr, se);
+        // allocate space for local id in function stack.
         entry->insertFront(alloca);  // allocate instructions should be inserted
                                      // into the begin of the entry block.
-        se->setAddr(addr);  // set the addr operand in symbol entry so that we
+        Operand* temp;
+        if (se->isParam())
+            temp = se->getAddr();
+        se->setAddr(addr);  // set the addr operand in symbol entry so that
+                            // we can use it in subsequent code generation.
                             // can use it in subsequent code generation.
+        if (expr) {
+            BasicBlock* bb = builder->getInsertBB();
+            expr->genCode();
+            Operand* src = expr->getOperand();
+            new StoreInstruction(addr, src, bb);
+        }
+        if (se->isParam()) {
+            BasicBlock* bb = builder->getInsertBB();
+            new StoreInstruction(addr, temp, bb);
+        }
+    }
+    if (this->getNext()) {
+        this->getNext()->genCode();
     }
 }
 
 void ReturnStmt::genCode() {
     // Todo
     BasicBlock* bb = builder->getInsertBB();
-    retValue->genCode();
-    Operand* src=retValue->getOperand();
-    new RetInstruction(src,bb);
+    Operand* src = nullptr;
+    if (retValue) {
+        retValue->genCode();
+        src = retValue->getOperand();
+    }
+    new RetInstruction(src, bb);
 }
 void ExprStmt::genCode() {
     // Todo
@@ -376,24 +396,26 @@ void BreakStmt::genCode() {
 }
 void WhileStmt::genCode() {
     Function* func;
-    BasicBlock *cond_bb, *while_bb, *end_bb/*, *bb*/;
-    //bb = builder->getInsertBB();
+    BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
+    bb = builder->getInsertBB();
     func = builder->getInsertBB()->getParent();
     cond_bb = new BasicBlock(func);
     while_bb = new BasicBlock(func);
     end_bb = new BasicBlock(func);
 
-    //new UncondBrInstruction(cond_bb,bb);
+    new UncondBrInstruction(cond_bb, bb);
 
     builder->setInsertBB(cond_bb);
     cond->genCode();
-    Operand* condoperand= cond->getOperand();
-    new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
+    backPatch(cond->trueList(), while_bb);
+    backPatch(cond->falseList(), end_bb);
+    // Operand* condoperand= cond->getOperand();
+    // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
 
     builder->setInsertBB(while_bb);
     stmt->genCode();
-    while_bb=builder->getInsertBB();
-    new UncondBrInstruction(cond_bb,while_bb);
+    while_bb = builder->getInsertBB();
+    new UncondBrInstruction(cond_bb, while_bb);
 
     builder->setInsertBB(end_bb);
 }
@@ -404,21 +426,32 @@ void InitValueListExpr::genCode() {
     // Todo
 }
 void CallExpr::genCode() {
-    // Todo
-
+    std::vector<Operand*> operands;
+    ExprNode* temp = param;
+    while (temp) {
+        temp->genCode();
+        operands.push_back(temp->getOperand());
+        temp = ((ExprNode*)temp->getNext());
+    }
+    BasicBlock* bb = builder->getInsertBB();
+    new CallInstruction(dst, symbolEntry, operands, bb);
 }
 void UnaryExpr::genCode() {
     // Todo
-    if(op==NOT){
-        std::vector<Instruction*> temp=trueList();
+    if (op == NOT) {
+        std::vector<Instruction*> temp = trueList();
         true_list = falseList();
         false_list = temp;
+    } else if (op == SUB) {
+        BasicBlock* bb = builder->getInsertBB();
+        Operand* src1 =
+            new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
+        Operand* src2 = expr->getOperand();
+        new BinaryInstruction(BinaryInstruction::SUB, dst, src1, src2, bb);
     }
-
 }
 void ExprNode::genCode() {
     // Todo
-    
 }
 
 bool ContinueStmt::typeCheck(Type* retType) {
@@ -591,6 +624,11 @@ CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
     if (symbolEntry) {
         Type* type = symbolEntry->getType();
         this->type = ((FunctionType*)type)->getRetType();
+        if (this->type != TypeSystem::voidType) {
+            SymbolEntry* se =
+                new TemporarySymbolEntry(this->type, SymbolTable::getLabel());
+            dst = new Operand(se);
+        }
         std::vector<Type*> params = ((FunctionType*)type)->getParamsType();
         ExprNode* temp = param;
         for (auto it = params.begin(); it != params.end(); it++) {
@@ -780,6 +818,7 @@ int BinaryExpr::getValue() {
 
 UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
     : ExprNode(se), op(op), expr(expr) {
+    dst = new Operand(se);
     std::string op_str = op == UnaryExpr::NOT ? "!" : "-";
     if (expr->getType()->isVoid()) {
         fprintf(stderr,

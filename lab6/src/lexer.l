@@ -259,8 +259,9 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
     vec.push_back(TypeSystem::intType);
-    Type* funcType = new FunctionType(TypeSystem::voidType, vec);
+    Type* funcType = new FunctionType(TypeSystem::voidType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -277,7 +278,8 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
-    Type* funcType = new FunctionType(TypeSystem::intType, vec);
+    std::vector<SymbolEntry*> vec1;
+    Type* funcType = new FunctionType(TypeSystem::intType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -294,8 +296,9 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
     vec.push_back(TypeSystem::intType);
-    Type* funcType = new FunctionType(TypeSystem::voidType, vec);
+    Type* funcType = new FunctionType(TypeSystem::voidType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -311,7 +314,8 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
-    Type* funcType = new FunctionType(TypeSystem::intType, vec);
+    std::vector<SymbolEntry*> vec1;
+    Type* funcType = new FunctionType(TypeSystem::intType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -329,10 +333,11 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
     vec.push_back(TypeSystem::intType);
     ArrayType* arr = new ArrayType(TypeSystem::intType, 0);
     vec.push_back(arr);
-    Type* funcType = new FunctionType(TypeSystem::voidType, vec);
+    Type* funcType = new FunctionType(TypeSystem::voidType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -350,9 +355,10 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
     ArrayType* arr = new ArrayType(TypeSystem::intType, 0);
     vec.push_back(arr);
-    Type* funcType = new FunctionType(TypeSystem::intType, vec);
+    Type* funcType = new FunctionType(TypeSystem::intType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -370,9 +376,10 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
     StringType* str = new StringType(0);
     vec.push_back(str);
-    Type* funcType = new FunctionType(TypeSystem::voidType, vec);
+    Type* funcType = new FunctionType(TypeSystem::voidType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -388,7 +395,8 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
-    Type* funcType = new FunctionType(TypeSystem::voidType, vec);
+    std::vector<SymbolEntry*> vec1;
+    Type* funcType = new FunctionType(TypeSystem::voidType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
@@ -404,7 +412,8 @@ LINECOMMENT \/\/[^\n]*
     strcpy(lexeme, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
-    Type* funcType = new FunctionType(TypeSystem::voidType, vec);
+    std::vector<SymbolEntry*> vec1;
+    Type* funcType = new FunctionType(TypeSystem::voidType, vec,vec1);
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();

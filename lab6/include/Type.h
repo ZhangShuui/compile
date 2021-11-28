@@ -2,6 +2,7 @@
 #define __TYPE_H__
 #include <string>
 #include <vector>
+#include "SymbolTable.h"
 
 class Type {
    private:
@@ -46,14 +47,21 @@ class FunctionType : public Type {
    private:
     Type* returnType;
     std::vector<Type*> paramsType;
+    std::vector<SymbolEntry*> paramsSe;
 
    public:
-    FunctionType(Type* returnType, std::vector<Type*> paramsType)
-        : Type(Type::FUNC), returnType(returnType), paramsType(paramsType){};
+    FunctionType(Type* returnType,
+                 std::vector<Type*> paramsType,
+                 std::vector<SymbolEntry*> paramsSe)
+        : Type(Type::FUNC),
+          returnType(returnType),
+          paramsType(paramsType),
+          paramsSe(paramsSe){};
     void setParamsType(std::vector<Type*> paramsType) {
         this->paramsType = paramsType;
     };
     std::vector<Type*> getParamsType() { return paramsType; };
+    std::vector<SymbolEntry*> getParamsSe() { return paramsSe; };
     Type* getRetType() { return returnType; };
     std::string toStr();
 };
