@@ -23,8 +23,8 @@ void BasicBlock::insertBefore(Instruction *dst, Instruction *src)
     src->getPrev()->setNext(dst);
     dst->setPrev(src->getPrev());
 
-    dst->setNext(head);
-    head->setPrev(dst);
+    dst->setNext(src);
+    src->setPrev(dst);
 
     dst->setParent(this);
 }
