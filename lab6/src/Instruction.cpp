@@ -315,8 +315,8 @@ CallInstruction::CallInstruction(Operand* dst,
                                  BasicBlock* insert_bb)
     : Instruction(CALL, insert_bb), func(func) {
     operands.push_back(dst);
-    if(dst)
-    dst->setDef(this);
+    if (dst)
+        dst->setDef(this);
     for (auto param : params) {
         operands.push_back(param);
         param->addUse(this);
@@ -337,4 +337,21 @@ void CallInstruction::output() const {
                 operands[i]->toStr().c_str());
     }
     fprintf(yyout, ")\n");
+}
+
+ZextInstruction::ZextInstruction(Operand* dst,
+                                 Operand* src,
+                                 BasicBlock* insert_bb)
+    : Instruction(ZEXT, insert_bb) {
+    operands.push_back(dst);
+    operands.push_back(src);
+    dst->setDef(this);
+    src->addUse(this);
+}
+
+void ZextInstruction::output() const {
+    Operand* dst = operands[0];
+    Operand* src = operands[1];
+    fprintf(yyout, "  %s = zext %s %s to i32\n", dst->toStr().c_str(),
+            src->getType()->toStr().c_str(), src->toStr().c_str());
 }

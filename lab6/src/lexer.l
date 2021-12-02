@@ -251,7 +251,6 @@ LINECOMMENT \/\/[^\n]*
 }
 
 "putint" {
-    // 暂时先写这一个吧
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
     char *lexeme;
@@ -265,7 +264,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }
@@ -283,12 +282,11 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }
 "putch" {
-    // 暂时先写这一个吧
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
     char *lexeme;
@@ -302,7 +300,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }
@@ -319,13 +317,12 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }
 
 "putarray" {
-    // 暂时先写这一个吧
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
     char *lexeme;
@@ -341,13 +338,12 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }
 
 "getarray" {
-    // 暂时先写这一个吧
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
     char *lexeme;
@@ -362,13 +358,12 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }
 
 "putf" {
-    // 暂时先写这一个吧
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
     char *lexeme;
@@ -383,7 +378,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }
@@ -400,7 +395,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }
@@ -417,7 +412,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel());
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
     st->install(yytext, se);
     return ID;
 }

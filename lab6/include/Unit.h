@@ -12,6 +12,7 @@ class Unit {
    private:
     std::vector<SymbolEntry*> global_list;
     std::vector<Function*> func_list;
+    std::vector<SymbolEntry*> declare_list;
 
    public:
     Unit() = default;
@@ -19,6 +20,7 @@ class Unit {
     void insertFunc(Function*);
     void removeFunc(Function*);
     void insertGlobal(SymbolEntry*);
+    void insertDeclare(SymbolEntry*);
     void output() const;
     iterator begin() { return func_list.begin(); };
     iterator end() { return func_list.end(); };

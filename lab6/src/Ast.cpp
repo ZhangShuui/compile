@@ -57,18 +57,19 @@ void FunctionDef::genCode() {
     Function* func = new Function(unit, se);
     BasicBlock* entry = func->getEntry();
     // set the insert point to the entry basicblock of this function.
+
     builder->setInsertBB(entry);
-    if (decl) {
+    if (decl)
         decl->genCode();
-    }
     // function中的stmt节点是用compoundstmt进行初始化的
     if (stmt)
         stmt->genCode();
 
     /**
-     * Construct control flow graph. You need do set successors and predecessors
-     * for each basic block. Todo
-     */
+     * Construct control flow graph. You need do set successors and predecessors
+     * for each basic block. Todo
+     */
+
     for (auto block = func->begin(); block != func->end(); block++) {
         //获取该块的最后一条指令
         Instruction* last = (*block)->rbegin();
@@ -80,15 +81,18 @@ void FunctionDef::genCode() {
                 dynamic_cast<CondBrInstruction*>(last)->getFalseBranch();
             (*block)->addSucc(truebranch);
             (*block)->addSucc(falsebranch);
-
             truebranch->addPred(*block);
             falsebranch->addPred(*block);
         } else if (last->isUncond())  //无条件跳转指令可获取跳转的目标块
         {
             BasicBlock* dst =
                 dynamic_cast<UncondBrInstruction*>(last)->getBranch();
-            (*block)->addSucc(dst);
-            dst->addPred(*block);
+            if (dst->empty()) {
+                (*block)->remove(last);
+            } else {
+                (*block)->addSucc(dst);
+                dst->addPred(*block);
+            }
         }
     }
 }
@@ -148,18 +152,18 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
     }
     if (op >= BinaryExpr::AND && op <= BinaryExpr::NOTEQUAL) {
         type = TypeSystem::boolType;
-        if (op == BinaryExpr::AND || op == BinaryExpr::OR) {
-            if (expr1->getType()->isInt() &&
-                expr1->getType()->getSize() == 32) {
-                ImplictCastExpr* temp = new ImplictCastExpr(expr1);
-                this->expr1 = temp;
-            }
-            if (expr2->getType()->isInt() &&
-                expr2->getType()->getSize() == 32) {
-                ImplictCastExpr* temp = new ImplictCastExpr(expr2);
-                this->expr2 = temp;
-            }
-        }
+        // if (op == BinaryExpr::AND || op == BinaryExpr::OR) {
+        //     if (expr1->getType()->isInt() &&
+        //         expr1->getType()->getSize() == 32) {
+        //         ImplictCastExpr* temp = new ImplictCastExpr(expr1);
+        //         this->expr1 = temp;
+        //     }
+        //     if (expr2->getType()->isInt() &&
+        //         expr2->getType()->getSize() == 32) {
+        //         ImplictCastExpr* temp = new ImplictCastExpr(expr2);
+        //         this->expr2 = temp;
+        //     }
+        // }
     } else
         type = TypeSystem::intType;
 };
@@ -274,6 +278,9 @@ void IfStmt::genCode() {
     end_bb = new BasicBlock(func);
 
     cond->genCode();
+    if(cond->isImplictCastExpr()){
+        
+    }
 
     backPatch(cond->trueList(), then_bb);
     backPatch(cond->falseList(), end_bb);
@@ -438,15 +445,22 @@ void CallExpr::genCode() {
 }
 void UnaryExpr::genCode() {
     // Todo
+    expr->genCode();
     if (op == NOT) {
-        std::vector<Instruction*> temp = trueList();
-        true_list = falseList();
+        std::vector<Instruction*> temp = expr->trueList();
+        true_list = expr->falseList();
         false_list = temp;
     } else if (op == SUB) {
+        Operand* src2;
         BasicBlock* bb = builder->getInsertBB();
         Operand* src1 =
             new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
-        Operand* src2 = expr->getOperand();
+        if (expr->getType()->getSize() == 1) {
+            src2 = new Operand(new TemporarySymbolEntry(
+                TypeSystem::boolType, SymbolTable::getLabel()));
+            new ZextInstruction(src2, expr->getOperand(), bb);
+        } else
+            src2 = expr->getOperand();
         new BinaryInstruction(BinaryInstruction::SUB, dst, src1, src2, bb);
     }
 }
@@ -647,6 +661,9 @@ CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
                     symbolEntry->toStr().c_str(), type->toStr().c_str());
         }
     }
+    if (((IdentifierSymbolEntry*)se)->isSysy()){
+        unit.insertDeclare(se);
+    }
 }
 
 AssignStmt::AssignStmt(ExprNode* lval, ExprNode* expr)
@@ -817,8 +834,7 @@ int BinaryExpr::getValue() {
 }
 
 UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
-    : ExprNode(se), op(op), expr(expr) {
-    dst = new Operand(se);
+    : ExprNode(se, UNARYEXPR), op(op), expr(expr) {
     std::string op_str = op == UnaryExpr::NOT ? "!" : "-";
     if (expr->getType()->isVoid()) {
         fprintf(stderr,
@@ -826,13 +842,16 @@ UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
                 op_str.c_str());
     }
     if (op == UnaryExpr::NOT) {
-        type = TypeSystem::boolType;
-        if (expr->getType()->isInt() && expr->getType()->getSize() == 32) {
-            ImplictCastExpr* temp = new ImplictCastExpr(expr);
-            this->expr = temp;
-        }
-    } else if (op == UnaryExpr::SUB)
         type = TypeSystem::intType;
+        dst = expr->getOperand();
+        // if (expr->getType()->isInt() && expr->getType()->getSize() == 32) {
+        //     ImplictCastExpr* temp = new ImplictCastExpr(expr);
+        //     this->expr = temp;
+        // }
+    } else if (op == UnaryExpr::SUB) {
+        type = TypeSystem::intType;
+        dst = new Operand(se);
+    }
 };
 
 void UnaryExpr::output(int level) {
@@ -1032,4 +1051,20 @@ void FunctionDef::output(int level) {
         decl->output(level + 4);
     }
     stmt->output(level + 4);
+}
+
+void ImplictCastExpr::genCode() {
+    expr->genCode();
+    BasicBlock* bb = builder->getInsertBB();
+    Function* func = bb->getParent();
+    BasicBlock* trueBB = new BasicBlock(func);
+    BasicBlock* tempbb = new BasicBlock(func);
+    BasicBlock* falseBB = new BasicBlock(func);
+
+    new CmpInstruction(
+        CmpInstruction::NE, this->dst, this->expr->getOperand(),
+        new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0)), bb);
+    this->trueList().push_back(
+        new CondBrInstruction(trueBB, tempbb, this->dst, bb));
+    this->falseList().push_back(new UncondBrInstruction(falseBB, tempbb));
 }

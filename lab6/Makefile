@@ -52,8 +52,10 @@ run:app
 
 run1:app
 	@$(BINARY) -o example.ll -i example.sy
-	clang example.ll -o example.out
-	clang example.out -L. -lsysy -o example
+	clang example.ll sysyruntimelibrary/sylib.c -o example
+	./example
+	echo $?
+	
 
 gdb:app
 	@gdb $(BINARY)

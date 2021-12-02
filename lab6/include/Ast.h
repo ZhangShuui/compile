@@ -47,7 +47,7 @@ class ExprNode : public Node {
     int kind;
 
    protected:
-    enum { EXPR, INITVALUELISTEXPR, IMPLICTCASTEXPR };
+    enum { EXPR, INITVALUELISTEXPR, IMPLICTCASTEXPR, UNARYEXPR };
     Type* type;
     SymbolEntry* symbolEntry;
     Operand* dst;  // The result of the subtree is stored into dst.
@@ -60,6 +60,7 @@ class ExprNode : public Node {
     bool isExpr() const { return kind == EXPR; };
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
     bool isImplictCastExpr() const { return kind == IMPLICTCASTEXPR; };
+    bool isUnaryExpr() const { return kind == UNARYEXPR; };
     SymbolEntry* getSymbolEntry() { return symbolEntry; };
     virtual bool typeCheck(Type* retType = nullptr) { return false; };
     void genCode();
@@ -106,6 +107,7 @@ class UnaryExpr : public ExprNode {
     int getValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
+    int getOp() const { return op; };
 };
 
 class CallExpr : public ExprNode {
@@ -187,13 +189,14 @@ class ImplictCastExpr : public ExprNode {
     ImplictCastExpr(ExprNode* expr)
         : ExprNode(nullptr, IMPLICTCASTEXPR), expr(expr) {
         type = TypeSystem::boolType;
+        dst = new Operand(
+            new TemporarySymbolEntry(type, SymbolTable::getLabel()));
     };
     void output(int level);
     ExprNode* getExpr() const { return expr; };
     bool typeCheck(Type* retType = nullptr) { return false; };
-    void genCode(){};
+    void genCode();
 };
-
 class StmtNode : public Node {
    private:
     int kind;

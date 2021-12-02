@@ -224,7 +224,8 @@ UnaryExp
         $$ = new UnaryExpr(se, UnaryExpr::SUB, $2);
     }
     | NOT UnaryExp {
-        $$ = new UnaryExpr(nullptr, UnaryExpr::NOT, $2);
+        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
+        $$ = new UnaryExpr(se, UnaryExpr::NOT, $2);
     }
     ;
 MulExp

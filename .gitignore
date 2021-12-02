@@ -9,3 +9,6 @@ parser.h
 parser.cpp
 lexer.h
 *.ll
+*.bin
+*.log
+*.res

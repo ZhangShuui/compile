@@ -104,17 +104,22 @@ class IdentifierSymbolEntry : public SymbolEntry {
     int value;
     int label;
     bool initial;
+    bool sysy;
     int* arrayValue;
     Operand* addr;  // The address of the identifier.
                     // You can add any field you need here.
 
    public:
-    IdentifierSymbolEntry(Type* type, std::string name, int scope);
+    IdentifierSymbolEntry(Type* type,
+                          std::string name,
+                          int scope,
+                          bool sysy = false);
     virtual ~IdentifierSymbolEntry(){};
     std::string toStr();
     bool isGlobal() const { return scope == GLOBAL; };
     bool isParam() const { return scope == PARAM; };
     bool isLocal() const { return scope >= LOCAL; };
+    bool isSysy() const { return sysy; };
     int getScope() const { return scope; };
     void setAddr(Operand* addr) { this->addr = addr; };
     Operand* getAddr() { return addr; };
@@ -157,8 +162,6 @@ class TemporarySymbolEntry : public SymbolEntry {
     int getLabel() const { return label; };
     // You can add any function you need here.
 };
-
-
 
 extern SymbolTable* identifiers;
 extern SymbolTable* globals;
