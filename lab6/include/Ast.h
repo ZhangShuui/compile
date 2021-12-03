@@ -108,6 +108,7 @@ class UnaryExpr : public ExprNode {
     bool typeCheck(Type* retType = nullptr);
     void genCode();
     int getOp() const { return op; };
+    void setType(Type* type) { this->type = type; }
 };
 
 class CallExpr : public ExprNode {

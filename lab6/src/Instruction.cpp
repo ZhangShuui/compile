@@ -355,3 +355,20 @@ void ZextInstruction::output() const {
     fprintf(yyout, "  %s = zext %s %s to i32\n", dst->toStr().c_str(),
             src->getType()->toStr().c_str(), src->toStr().c_str());
 }
+
+XorInstruction::XorInstruction(Operand* dst,
+                                 Operand* src,
+                                 BasicBlock* insert_bb)
+    : Instruction(XOR, insert_bb) {
+    operands.push_back(dst);
+    operands.push_back(src);
+    dst->setDef(this);
+    src->addUse(this);
+}
+
+void XorInstruction::output() const {
+    Operand* dst = operands[0];
+    Operand* src = operands[1];
+    fprintf(yyout, "  %s = xor %s %s, true\n", dst->toStr().c_str(),
+            src->getType()->toStr().c_str(), src->toStr().c_str());
+}

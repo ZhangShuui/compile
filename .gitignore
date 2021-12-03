@@ -12,3 +12,7 @@ lexer.h
 *.bin
 *.log
 *.res
+example.sy
+example
+lexer.cpp
+lexer.h
