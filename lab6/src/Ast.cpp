@@ -286,7 +286,34 @@ void Id::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     Operand* addr =
         dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getAddr();
-    new LoadInstruction(dst, addr, bb);
+    if (type->isInt())
+        new LoadInstruction(dst, addr, bb);
+    else if (type->isArray()) {
+        if (arrIdx) {
+            ArrayType* type = (ArrayType*)(this->type);
+            Operand* temp = addr;
+            if (type->getLength() == -1) {
+                Operand* dst1 = new Operand(new TemporarySymbolEntry(
+                    new PointerType(TypeSystem::intType),
+                    SymbolTable::getLabel()));
+                temp = dst1;
+                new LoadInstruction(dst1, addr, bb);
+            }
+            arrIdx->genCode();
+            new GepInstruction(dst, temp, arrIdx->getOperand(), bb);
+            // 如果是右值还需要一条load
+            if (!left) {
+                Operand* dst1 = new Operand(new TemporarySymbolEntry(
+                    TypeSystem::intType, SymbolTable::getLabel()));
+                new LoadInstruction(dst1, dst, bb);
+                dst = dst1;
+            }
+        } else {
+            Operand* idx =
+                new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
+            new GepInstruction(dst, addr, idx, bb);
+        }
+    }
 }
 
 void IfStmt::genCode() {
@@ -369,6 +396,9 @@ void DeclStmt::genCode() {
         Operand* addr;
         SymbolEntry* addr_se;
         Type* type;
+        // if (se->isParam() && se->getType()->isArray())
+        //     type = new PointerType(TypeSystem::intType);
+        // else
         type = new PointerType(se->getType());
         addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel());
         addr = new Operand(addr_se);
@@ -383,10 +413,42 @@ void DeclStmt::genCode() {
                             // we can use it in subsequent code generation.
                             // can use it in subsequent code generation.
         if (expr) {
-            BasicBlock* bb = builder->getInsertBB();
-            expr->genCode();
-            Operand* src = expr->getOperand();
-            new StoreInstruction(addr, src, bb);
+            if (expr->isInitValueListExpr()) {
+                BasicBlock* bb = builder->getInsertBB();
+                expr->genCode();
+                ExprNode* temp = ((InitValueListExpr*)expr)->getExpr();
+                int count = 0;
+                while (temp) {
+                    Operand* dst = new Operand(new TemporarySymbolEntry(
+                        TypeSystem::intType, SymbolTable::getLabel()));
+                    Operand* idx = (new Constant(new ConstantSymbolEntry(
+                                        TypeSystem::intType, count++)))
+                                       ->getOperand();
+                    new GepInstruction(dst, addr, idx, bb);
+                    Operand* src = temp->getOperand();
+                    new StoreInstruction(dst, src, bb);
+                    temp = (ExprNode*)(temp->getNext());
+                }
+                int length = ((ArrayType*)(expr->getSymbolEntry()->getType()))
+                                 ->getLength();
+                while (count < length) {
+                    Operand* dst = new Operand(new TemporarySymbolEntry(
+                        TypeSystem::intType, SymbolTable::getLabel()));
+                    Operand* idx = (new Constant(new ConstantSymbolEntry(
+                                        TypeSystem::intType, count++)))
+                                       ->getOperand();
+                    new GepInstruction(dst, addr, idx, bb);
+                    Operand* src = (new Constant(new ConstantSymbolEntry(
+                                        TypeSystem::intType, 0)))
+                                       ->getOperand();
+                    new StoreInstruction(dst, src, bb);
+                }
+            } else {
+                BasicBlock* bb = builder->getInsertBB();
+                expr->genCode();
+                Operand* src = expr->getOperand();
+                new StoreInstruction(addr, src, bb);
+            }
         }
         if (se->isParam()) {
             BasicBlock* bb = builder->getInsertBB();
@@ -525,8 +587,18 @@ bool ExprStmt::typeCheck(Type* retType) {
 void AssignStmt::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     expr->genCode();
-    Operand* addr =
-        dynamic_cast<IdentifierSymbolEntry*>(lval->getSymbolEntry())->getAddr();
+    Operand* addr;
+    if (lval->getOriginType()->isInt())
+        addr = dynamic_cast<IdentifierSymbolEntry*>(lval->getSymbolEntry())
+                   ->getAddr();
+    else if (lval->getOriginType()->isArray()) {
+        ((Id*)lval)->setLeft();
+        lval->genCode();
+        addr = lval->getOperand();
+        // Type* type = new PointerType(TypeSystem::intType);
+        // SymbolEntry* addr_se = new TemporarySymbolEntry(type,
+        // SymbolTable::getLabel()); addr = new Operand(addr_se);
+    }
     Operand* src = expr->getOperand();
     /***
      * We haven't implemented array yet, the lval can only be ID. So we just

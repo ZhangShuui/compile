@@ -56,7 +56,7 @@ class ExprNode : public Node {
         : kind(kind), symbolEntry(symbolEntry){};
     Operand* getOperand() { return dst; };
     void output(int level);
-    virtual int getValue() { return 0; };
+    virtual int getValue() { return -1; };
     bool isExpr() const { return kind == EXPR; };
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
     bool isImplictCastExpr() const { return kind == IMPLICTCASTEXPR; };
@@ -65,6 +65,7 @@ class ExprNode : public Node {
     virtual bool typeCheck(Type* retType = nullptr) { return false; };
     void genCode();
     virtual Type* getType() { return type; };
+    Type* getOriginType() { return type; };
 };
 
 class BinaryExpr : public ExprNode {
@@ -137,15 +138,23 @@ class Constant : public ExprNode {
 class Id : public ExprNode {
    private:
     ExprNode* arrIdx;
+    bool left = false;
 
    public:
     Id(SymbolEntry* se, ExprNode* arrIdx = nullptr)
         : ExprNode(se), arrIdx(arrIdx) {
         if (se) {
-            SymbolEntry* temp = new TemporarySymbolEntry(
-                se->getType(), SymbolTable::getLabel());
-            dst = new Operand(temp);
             type = se->getType();
+            if (type->isInt()) {
+                SymbolEntry* temp = new TemporarySymbolEntry(
+                    TypeSystem::intType, SymbolTable::getLabel());
+                dst = new Operand(temp);
+            }else if(type->isArray()){
+                SymbolEntry* temp = new TemporarySymbolEntry(
+                    new PointerType(TypeSystem::intType),
+                    SymbolTable::getLabel());
+                dst = new Operand(temp);
+            }
         }
     };
     void output(int level);
@@ -154,6 +163,8 @@ class Id : public ExprNode {
     int getValue();
     ExprNode* getArrIdx() { return arrIdx; };
     Type* getType();
+    bool isLeft() const { return left; };
+    void setLeft() { left = true; }
 };
 
 class ImplicitValueInitExpr : public ExprNode {

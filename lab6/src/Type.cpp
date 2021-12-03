@@ -31,23 +31,28 @@ std::string VoidType::toStr() {
 std::string ArrayType::toStr() {
     std::vector<std::string> vec;
     Type* temp = this;
+    int count = 0;
+    bool flag = false;
     while (temp && temp->isArray()) {
         std::ostringstream buffer;
-        if (temp == this && length == 0)
-            buffer << '[' << ']';
-        else
-            buffer << '[' << ((ArrayType*)temp)->getLength() << ']';
-        vec.push_back(buffer.str());
+        if (((ArrayType*)temp)->getLength() == -1) {
+            flag = true;
+        } else {
+            buffer << "[" << ((ArrayType*)temp)->getLength() << " x ";
+            count++;
+            vec.push_back(buffer.str());
+        }
         temp = ((ArrayType*)temp)->getElementType();
-        ;
     }
     assert(temp->isInt());
     std::ostringstream buffer;
-    if (constant)
-        buffer << "const ";
-    buffer << "int";
     for (auto it = vec.begin(); it != vec.end(); it++)
         buffer << *it;
+    buffer << "i32";
+    while (count--)
+        buffer << ']';
+    if(flag)
+        buffer << '*';
     return buffer.str();
 }
 

@@ -108,6 +108,7 @@ class PointerType : public Type {
         this->valueType = valueType;
     };
     std::string toStr();
+    Type* getType() const { return valueType; };
 };
 
 class TypeSystem {

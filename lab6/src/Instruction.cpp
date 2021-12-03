@@ -252,8 +252,16 @@ AllocaInstruction::~AllocaInstruction() {
 void AllocaInstruction::output() const {
     std::string dst, type;
     dst = operands[0]->toStr();
-    type = se->getType()->toStr();
-    fprintf(yyout, "  %s = alloca %s, align 4\n", dst.c_str(), type.c_str());
+    if (se->getType()->isInt()) {
+        type = se->getType()->toStr();
+        fprintf(yyout, "  %s = alloca %s, align 4\n", dst.c_str(),
+                type.c_str());
+    } else if (se->getType()->isArray()) {
+        type = se->getType()->toStr();
+        // type = operands[0]->getSymbolEntry()->getType()->toStr();
+        fprintf(yyout, "  %s = alloca %s, align 4\n", dst.c_str(),
+                type.c_str());
+    }
 }
 
 LoadInstruction::LoadInstruction(Operand* dst,
@@ -357,8 +365,8 @@ void ZextInstruction::output() const {
 }
 
 XorInstruction::XorInstruction(Operand* dst,
-                                 Operand* src,
-                                 BasicBlock* insert_bb)
+                               Operand* src,
+                               BasicBlock* insert_bb)
     : Instruction(XOR, insert_bb) {
     operands.push_back(dst);
     operands.push_back(src);
@@ -371,4 +379,34 @@ void XorInstruction::output() const {
     Operand* src = operands[1];
     fprintf(yyout, "  %s = xor %s %s, true\n", dst->toStr().c_str(),
             src->getType()->toStr().c_str(), src->toStr().c_str());
+}
+
+GepInstruction::GepInstruction(Operand* dst,
+                               Operand* arr,
+                               Operand* idx,
+                               BasicBlock* insert_bb)
+    : Instruction(GEP, insert_bb) {
+    operands.push_back(dst);
+    operands.push_back(arr);
+    operands.push_back(idx);
+    dst->setDef(this);
+    arr->addUse(this);
+    idx->addUse(this);
+}
+
+void GepInstruction::output() const {
+    Operand* dst = operands[0];
+    Operand* arr = operands[1];
+    Operand* idx = operands[2];
+    std::string arrType = arr->getType()->toStr();
+    if (((PointerType*)(arr->getType()))->getType()->isInt())
+        fprintf(
+            yyout, "  %s = getelementptr inbounds %s, %s %s, i32 %s\n",
+            dst->toStr().c_str(), arrType.substr(0, arrType.size() - 1).c_str(),
+            arrType.c_str(), arr->toStr().c_str(), idx->toStr().c_str());
+    else
+        fprintf(
+            yyout, "  %s = getelementptr inbounds %s, %s %s, i32 0, i32 %s\n",
+            dst->toStr().c_str(), arrType.substr(0, arrType.size() - 1).c_str(),
+            arrType.c_str(), arr->toStr().c_str(), idx->toStr().c_str());
 }
