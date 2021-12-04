@@ -1,4 +1,5 @@
 #include "Ast.h"
+#include <stack>
 #include <string>
 #include "IRBuilder.h"
 #include "Instruction.h"
@@ -290,17 +291,36 @@ void Id::genCode() {
         new LoadInstruction(dst, addr, bb);
     else if (type->isArray()) {
         if (arrIdx) {
-            ArrayType* type = (ArrayType*)(this->type);
-            Operand* temp = addr;
-            if (type->getLength() == -1) {
-                Operand* dst1 = new Operand(new TemporarySymbolEntry(
-                    new PointerType(TypeSystem::intType),
-                    SymbolTable::getLabel()));
-                temp = dst1;
-                new LoadInstruction(dst1, addr, bb);
+            Type* type = ((ArrayType*)(this->type))->getElementType();
+            Type* type1 = this->type;
+            Operand* tempSrc = addr;
+            Operand* tempDst = dst;
+            ExprNode* idx = arrIdx;
+            bool flag = false;
+            while (true) {
+                if (((ArrayType*)type1)->getLength() == -1) {
+                    Operand* dst1 = new Operand(new TemporarySymbolEntry(
+                        new PointerType(type), SymbolTable::getLabel()));
+                    tempSrc = dst1;
+                    new LoadInstruction(dst1, addr, bb);
+                    flag = true;
+                }
+                idx->genCode();
+                new GepInstruction(tempDst, tempSrc, idx->getOperand(), bb,
+                                   flag);
+                if (flag)
+                    flag = false;
+                if (type == TypeSystem::intType ||
+                    type == TypeSystem::constIntType)
+                    break;
+                type = ((ArrayType*)type)->getElementType();
+                type1 = ((ArrayType*)type1)->getElementType();
+                tempSrc = tempDst;
+                tempDst = new Operand(new TemporarySymbolEntry(
+                    new PointerType(type), SymbolTable::getLabel()));
+                idx = (ExprNode*)(idx->getNext());
             }
-            arrIdx->genCode();
-            new GepInstruction(dst, temp, arrIdx->getOperand(), bb);
+            dst = tempDst;
             // 如果是右值还需要一条load
             if (!left) {
                 Operand* dst1 = new Operand(new TemporarySymbolEntry(
@@ -309,9 +329,19 @@ void Id::genCode() {
                 dst = dst1;
             }
         } else {
-            Operand* idx =
-                new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
-            new GepInstruction(dst, addr, idx, bb);
+            // 这里先这么办 后续有问题再改
+            if (((ArrayType*)(this->type))->getLength() == -1) {
+                Operand* dst1 = new Operand(new TemporarySymbolEntry(
+                    new PointerType(
+                        ((ArrayType*)(this->type))->getElementType()),
+                    SymbolTable::getLabel()));
+                new LoadInstruction(dst1, addr, bb);
+                dst = dst1;
+            } else {
+                Operand* idx = new Operand(
+                    new ConstantSymbolEntry(TypeSystem::intType, 0));
+                new GepInstruction(dst, addr, idx, bb);
+            }
         }
     }
 }
@@ -415,33 +445,55 @@ void DeclStmt::genCode() {
         if (expr) {
             if (expr->isInitValueListExpr()) {
                 BasicBlock* bb = builder->getInsertBB();
-                expr->genCode();
-                ExprNode* temp = ((InitValueListExpr*)expr)->getExpr();
-                int count = 0;
+                ExprNode* temp = expr;
+                std::stack<ExprNode*> stk;
+                std::vector<int> idx;
+                idx.push_back(0);
                 while (temp) {
-                    Operand* dst = new Operand(new TemporarySymbolEntry(
-                        TypeSystem::intType, SymbolTable::getLabel()));
-                    Operand* idx = (new Constant(new ConstantSymbolEntry(
-                                        TypeSystem::intType, count++)))
-                                       ->getOperand();
-                    new GepInstruction(dst, addr, idx, bb);
-                    Operand* src = temp->getOperand();
-                    new StoreInstruction(dst, src, bb);
-                    temp = (ExprNode*)(temp->getNext());
-                }
-                int length = ((ArrayType*)(expr->getSymbolEntry()->getType()))
-                                 ->getLength();
-                while (count < length) {
-                    Operand* dst = new Operand(new TemporarySymbolEntry(
-                        TypeSystem::intType, SymbolTable::getLabel()));
-                    Operand* idx = (new Constant(new ConstantSymbolEntry(
-                                        TypeSystem::intType, count++)))
-                                       ->getOperand();
-                    new GepInstruction(dst, addr, idx, bb);
-                    Operand* src = (new Constant(new ConstantSymbolEntry(
-                                        TypeSystem::intType, 0)))
-                                       ->getOperand();
-                    new StoreInstruction(dst, src, bb);
+                    if (temp->isInitValueListExpr()) {
+                        stk.push(temp);
+                        idx.push_back(0);
+                        temp = ((InitValueListExpr*)temp)->getExpr();
+                        continue;
+                    } else {
+                        temp->genCode();
+                        Type* type =
+                            ((ArrayType*)(se->getType()))->getElementType();
+                        Operand* tempSrc = addr;
+                        Operand* tempDst;
+                        Operand* index;
+                        int i = 1;
+                        while (true) {
+                            tempDst = new Operand(new TemporarySymbolEntry(
+                                new PointerType(type),
+                                SymbolTable::getLabel()));
+                            index = (new Constant(new ConstantSymbolEntry(
+                                         TypeSystem::intType, idx[i++])))
+                                        ->getOperand();
+                            new GepInstruction(tempDst, tempSrc, index, bb);
+                            if (type == TypeSystem::intType ||
+                                type == TypeSystem::constIntType)
+                                break;
+                            type = ((ArrayType*)type)->getElementType();
+                            tempSrc = tempDst;
+                        }
+                        new StoreInstruction(tempDst, temp->getOperand(), bb);
+                    }
+                    while (true) {
+                        if (temp->getNext()) {
+                            temp = (ExprNode*)(temp->getNext());
+                            idx[idx.size() - 1]++;
+                            break;
+                        } else {
+                            temp = stk.top();
+                            stk.pop();
+                            idx.pop_back();
+                            if (stk.empty())
+                                break;
+                        }
+                    }
+                    if (stk.empty())
+                        break;
                 }
             } else {
                 BasicBlock* bb = builder->getInsertBB();
@@ -1076,6 +1128,24 @@ void InitValueListExpr::addExpr(ExprNode* expr) {
 bool InitValueListExpr::isFull() {
     ArrayType* type = (ArrayType*)(this->symbolEntry->getType());
     return childCnt == type->getLength();
+}
+
+void InitValueListExpr::fill() {
+    Type* type = ((ArrayType*)(this->getType()))->getElementType();
+    if (type->isArray()) {
+        while (!isFull())
+            this->addExpr(new InitValueListExpr(new ConstantSymbolEntry(type)));
+        ExprNode* temp = expr;
+        while (temp) {
+            ((InitValueListExpr*)temp)->fill();
+            temp = (ExprNode*)(temp->getNext());
+        }
+    }
+    if (type->isInt()) {
+        while (!isFull())
+            this->addExpr(new Constant(new ConstantSymbolEntry(type, 0)));
+        return;
+    }
 }
 
 void ImplictCastExpr::output(int level) {

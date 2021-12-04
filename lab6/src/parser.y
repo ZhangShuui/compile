@@ -372,6 +372,7 @@ VarDef
         }
         arrayType = (ArrayType*)type;
         se = new IdentifierSymbolEntry(type, $1, identifiers->getLevel());
+        ((IdentifierSymbolEntry*)se)->setAllZero();
         int *p = new int[type->getSize()];
         ((IdentifierSymbolEntry*)se)->setArrayValue(p);
         if(!identifiers->install($1, se))
@@ -414,6 +415,8 @@ VarDef
     }
       InitVal {
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
+        if(((InitValueListExpr*)$5)->isEmpty())
+            ((IdentifierSymbolEntry*)$<se>4)->setAllZero();
         if(!identifiers->install($1, $<se>4))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         $$ = new DeclStmt(new Id($<se>4), $5);
@@ -722,17 +725,23 @@ FuncFParam
         SymbolEntry* se;
         ExprNode* temp = $3;
         Type* arr = TypeSystem::intType;
+        Type* arr1;
         std::stack<ExprNode*> stk;
         while(temp){
             stk.push(temp);
             temp = (ExprNode*)(temp->getNext());
         }
         while(!stk.empty()){
-            arr = new ArrayType(arr, stk.top()->getValue());
+            arr1 = new ArrayType(arr, stk.top()->getValue());
+            if(arr->isArray())
+                ((ArrayType*)arr)->setArrayType(arr1);
+            arr = arr1;
             stk.pop();
         }
         se = new IdentifierSymbolEntry(arr, $2, identifiers->getLevel());
         identifiers->install($2, se);
+        ((IdentifierSymbolEntry*)se)->setLabel();
+        ((IdentifierSymbolEntry*)se)->setAddr(new Operand(se));
         $$ = new DeclStmt(new Id(se));
         delete []$2;
     }

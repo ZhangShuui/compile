@@ -384,8 +384,9 @@ void XorInstruction::output() const {
 GepInstruction::GepInstruction(Operand* dst,
                                Operand* arr,
                                Operand* idx,
-                               BasicBlock* insert_bb)
-    : Instruction(GEP, insert_bb) {
+                               BasicBlock* insert_bb,
+                               bool first)
+    : Instruction(GEP, insert_bb), first(first) {
     operands.push_back(dst);
     operands.push_back(arr);
     operands.push_back(idx);
@@ -399,11 +400,14 @@ void GepInstruction::output() const {
     Operand* arr = operands[1];
     Operand* idx = operands[2];
     std::string arrType = arr->getType()->toStr();
-    if (((PointerType*)(arr->getType()))->getType()->isInt())
-        fprintf(
-            yyout, "  %s = getelementptr inbounds %s, %s %s, i32 %s\n",
-            dst->toStr().c_str(), arrType.substr(0, arrType.size() - 1).c_str(),
-            arrType.c_str(), arr->toStr().c_str(), idx->toStr().c_str());
+    // Type* type = ((PointerType*)(arr->getType()))->getType();
+    // ArrayType* type1 = (ArrayType*)(((ArrayType*)type)->getArrayType());
+    // if (type->isInt() || (type1 && type1->getLength() == -1))
+    if(first)
+        fprintf(yyout, "  %s = getelementptr inbounds %s, %s %s, i32 %s\n",
+                dst->toStr().c_str(),
+                arrType.substr(0, arrType.size() - 1).c_str(), arrType.c_str(),
+                arr->toStr().c_str(), idx->toStr().c_str());
     else
         fprintf(
             yyout, "  %s = getelementptr inbounds %s, %s %s, i32 0, i32 %s\n",

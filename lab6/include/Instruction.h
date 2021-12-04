@@ -28,7 +28,20 @@ class Instruction {
     Instruction* next;
     BasicBlock* parent;
     std::vector<Operand*> operands;
-    enum { BINARY, COND, UNCOND, RET, LOAD, STORE, CMP, ALLOCA, CALL, ZEXT, XOR, GEP };
+    enum {
+        BINARY,
+        COND,
+        UNCOND,
+        RET,
+        LOAD,
+        STORE,
+        CMP,
+        ALLOCA,
+        CALL,
+        ZEXT,
+        XOR,
+        GEP
+    };
 };
 
 // meaningless instruction, used as the head node of the instruction list.
@@ -157,8 +170,15 @@ class XorInstruction : public Instruction {
 };
 
 class GepInstruction : public Instruction {
-    public:
-    GepInstruction(Operand* dst, Operand* arr, Operand* idx, BasicBlock* insert_bb = nullptr);
+   private:
+    bool first;
+
+   public:
+    GepInstruction(Operand* dst,
+                   Operand* arr,
+                   Operand* idx,
+                   BasicBlock* insert_bb = nullptr,
+                   bool first = false);
     void output() const;
 };
 

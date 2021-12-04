@@ -106,6 +106,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     bool initial;
     bool sysy;
     int* arrayValue;
+    bool allZero;
     Operand* addr;  // The address of the identifier.
                     // You can add any field you need here.
 
@@ -129,6 +130,8 @@ class IdentifierSymbolEntry : public SymbolEntry {
     int* getArrayValue() const { return arrayValue; };
     int getLabel() const { return label; };
     void setLabel() { label = SymbolTable::getLabel(); };
+    void setAllZero() { allZero = true; };
+    bool isAllZero() const { return allZero; };
 
     // You can add any function you need here.
 };

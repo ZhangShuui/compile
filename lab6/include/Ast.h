@@ -149,9 +149,9 @@ class Id : public ExprNode {
                 SymbolEntry* temp = new TemporarySymbolEntry(
                     TypeSystem::intType, SymbolTable::getLabel());
                 dst = new Operand(temp);
-            }else if(type->isArray()){
+            } else if (type->isArray()) {
                 SymbolEntry* temp = new TemporarySymbolEntry(
-                    new PointerType(TypeSystem::intType),
+                    new PointerType(((ArrayType*)type)->getElementType()),
                     SymbolTable::getLabel());
                 dst = new Operand(temp);
             }
@@ -181,6 +181,7 @@ class InitValueListExpr : public ExprNode {
    public:
     InitValueListExpr(SymbolEntry* se, ExprNode* expr = nullptr)
         : ExprNode(se, INITVALUELISTEXPR), expr(expr) {
+        type = se->getType();
         childCnt = 0;
     };
     void output(int level);
@@ -190,6 +191,7 @@ class InitValueListExpr : public ExprNode {
     bool isFull();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
+    void fill();
 };
 
 // 仅用于int2bool
@@ -249,7 +251,13 @@ class DeclStmt : public StmtNode {
     ExprNode* expr;
 
    public:
-    DeclStmt(Id* id, ExprNode* expr = nullptr) : id(id), expr(expr){};
+    DeclStmt(Id* id, ExprNode* expr = nullptr) : id(id) {
+        if (expr) {
+            this->expr = expr;
+            if (expr->isInitValueListExpr())
+                ((InitValueListExpr*)(this->expr))->fill();
+        }
+    };
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
