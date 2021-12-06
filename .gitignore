@@ -16,3 +16,6 @@ example.sy
 example
 lexer.cpp
 lexer.h
+*.ast
+*.toks
+*.s
