@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <stack>
 #include "Operand.h"
 #include "Type.h"
 
@@ -12,6 +13,7 @@ class Function;
 class BasicBlock;
 class Instruction;
 class IRBuilder;
+
 
 class Node {
    private:
@@ -313,30 +315,38 @@ class WhileStmt : public StmtNode {
    private:
     ExprNode* cond;
     StmtNode* stmt;
-
+    BasicBlock* cond_bb;
+    BasicBlock* end_bb;
    public:
-    WhileStmt(ExprNode* cond, StmtNode* stmt) : cond(cond), stmt(stmt) {
+    WhileStmt(ExprNode* cond, StmtNode* stmt=nullptr) : cond(cond), stmt(stmt) {
         if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
             ImplictCastExpr* temp = new ImplictCastExpr(cond);
             this->cond = temp;
         }
     };
+    void setStmt(StmtNode* stmt){this->stmt = stmt;};
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
+    BasicBlock* get_cond_bb(){return this->cond_bb;};
+    BasicBlock* get_end_bb(){return this->end_bb;};
 };
 
 class BreakStmt : public StmtNode {
+    private:
+    StmtNode * whileStmt;
    public:
-    BreakStmt(){};
+    BreakStmt(StmtNode* whileStmt){this->whileStmt=whileStmt;};
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
 };
 
 class ContinueStmt : public StmtNode {
+    private:
+    StmtNode *whileStmt;
    public:
-    ContinueStmt(){};
+    ContinueStmt(StmtNode* whileStmt){this->whileStmt=whileStmt;};
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
@@ -395,7 +405,6 @@ class FunctionDef : public StmtNode {
 class Ast {
    private:
     Node* root;
-
    public:
     Ast() { root = nullptr; }
     void setRoot(Node* n) { root = n; }
@@ -403,5 +412,4 @@ class Ast {
     bool typeCheck(Type* retType = nullptr);
     void genCode(Unit* unit);
 };
-
 #endif

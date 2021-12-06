@@ -4,8 +4,10 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <stack>
 #include <algorithm>
 #include <iostream>
+#include "Ast.h"
 #include "BasicBlock.h"
 #include "SymbolTable.h"
 
