@@ -332,7 +332,7 @@ LINECOMMENT \/\/[^\n]*
     std::vector<Type*> vec;
     std::vector<SymbolEntry*> vec1;
     vec.push_back(TypeSystem::intType);
-    ArrayType* arr = new ArrayType(TypeSystem::intType, 0);
+    ArrayType* arr = new ArrayType(TypeSystem::intType, -1);
     vec.push_back(arr);
     Type* funcType = new FunctionType(TypeSystem::voidType, vec,vec1);
     SymbolTable* st = identifiers;
@@ -352,7 +352,7 @@ LINECOMMENT \/\/[^\n]*
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
     std::vector<SymbolEntry*> vec1;
-    ArrayType* arr = new ArrayType(TypeSystem::intType, 0);
+    ArrayType* arr = new ArrayType(TypeSystem::intType, -1);
     vec.push_back(arr);
     Type* funcType = new FunctionType(TypeSystem::intType, vec,vec1);
     SymbolTable* st = identifiers;

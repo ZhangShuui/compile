@@ -567,7 +567,8 @@ InitVal
             while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
                 stk.pop();
             }
-        while(idx % (((ArrayType*)($$->getSymbolEntry()->getType()))->getSize()/ sizeof(int)) !=0 )
+        int size = ((ArrayType*)($$->getSymbolEntry()->getType()))->getSize()/ TypeSystem::intType->getSize();
+        while(idx % size != 0)
             arrayValue[idx++] = 0;
         if(!stk.empty())
             arrayType = (ArrayType*)(((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
