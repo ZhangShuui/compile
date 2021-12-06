@@ -5,15 +5,16 @@
     #include <cstring>
     #include <stack>
     extern Ast ast;
+
     int yylex();
     int yyerror(char const*);
     ArrayType* arrayType;
     int idx;
     int* arrayValue;
     std::stack<InitValueListExpr*> stk;
+    std::stack<StmtNode*> whileStk;
     InitValueListExpr* top;
     int leftCnt = 0;
-    std::stack<int> whileStk;
     int whileCnt = 0;
     #include <iostream>
 }
@@ -145,20 +146,26 @@ IfStmt
 WhileStmt
     : WHILE LPAREN Cond RPAREN {
         whileCnt++;
+        WhileStmt *whileNode = new WhileStmt($3);
+        $<stmttype>$ = whileNode;
+        whileStk.push(whileNode);
     }
     Stmt {
-        $$ = new WhileStmt($3, $6);
+        StmtNode *whileNode = $<stmttype>5; 
+        ((WhileStmt*)whileNode)->setStmt($6);
+        $$=whileNode;
+        whileStk.pop();
         whileCnt--;
     }
     ;
 BreakStmt
     : BREAK SEMICOLON {
-        $$ = new BreakStmt();
+        $$ = new BreakStmt(whileStk.top());
     }
     ;
 ContinueStmt
     : CONTINUE SEMICOLON {
-        $$ = new ContinueStmt();
+        $$ = new ContinueStmt(whileStk.top());
     }
     ;
 ReturnStmt
