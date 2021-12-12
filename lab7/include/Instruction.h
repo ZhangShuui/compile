@@ -118,7 +118,7 @@ class CmpInstruction : public Instruction {
     ~CmpInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
-    enum { E, NE, L, GE, G, LE };
+    enum { E, NE, L, LE, G, GE };
 };
 
 // unconditional branch
@@ -171,6 +171,7 @@ class CallInstruction : public Instruction {
                     SymbolEntry* func,
                     std::vector<Operand*> params,
                     BasicBlock* insert_bb = nullptr);
+    ~CallInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
 };
@@ -180,6 +181,7 @@ class ZextInstruction : public Instruction {
     ZextInstruction(Operand* dst,
                     Operand* src,
                     BasicBlock* insert_bb = nullptr);
+    ~ZextInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
 };
@@ -187,6 +189,7 @@ class ZextInstruction : public Instruction {
 class XorInstruction : public Instruction {
    public:
     XorInstruction(Operand* dst, Operand* src, BasicBlock* insert_bb = nullptr);
+    ~XorInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
 };
@@ -201,6 +204,7 @@ class GepInstruction : public Instruction {
                    Operand* idx,
                    BasicBlock* insert_bb = nullptr,
                    bool first = false);
+    ~GepInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
 };

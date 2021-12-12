@@ -154,7 +154,9 @@ private:
     std::vector<MachineInstruction*> inst_list;
     std::set<MachineOperand*> live_in;
     std::set<MachineOperand*> live_out;
-public:
+    int cmpCond;
+
+   public:
     std::vector<MachineInstruction*>& getInsts() {return inst_list;};
     std::vector<MachineInstruction*>::iterator begin() { return inst_list.begin(); };
     std::vector<MachineInstruction*>::iterator end() { return inst_list.end(); };
@@ -167,6 +169,8 @@ public:
     std::vector<MachineBlock*>& getPreds() {return pred;};
     std::vector<MachineBlock*>& getSuccs() {return succ;};
     void output();
+    int getCmpCond() const {return cmpCond;};
+    void setCmpCond(int cond) { cmpCond = cond; };
 };
 
 class MachineFunction
