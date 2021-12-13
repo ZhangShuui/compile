@@ -3,6 +3,7 @@
 .vscode/*
 *.out
 lab6/build/*
+lab7/build/*
 lab5/build/*
 lab4/build/*
 parser.h

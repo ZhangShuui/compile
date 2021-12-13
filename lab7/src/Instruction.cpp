@@ -333,7 +333,11 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
         auto id_se = dynamic_cast<IdentifierSymbolEntry*>(se);
         if (id_se->isGlobal())
             mope = new MachineOperand(id_se->toStr().c_str());
-        else
+        else if (id_se->isParam()) {
+            // TODO: 这样分配的是虚拟寄存器 能对应到r0-r3嘛
+            //  r4之后的参数需要一条load 哪里加 怎么判断是r4之后的参数
+            mope = new MachineOperand(MachineOperand::VREG, id_se->getLabel());
+        } else
             exit(0);
     }
     return mope;
@@ -588,14 +592,18 @@ void RetInstruction::genMachineCode(AsmBuilder* builder) {
     }
     auto cur_func = builder->getFunction();
     auto sp = new MachineOperand(MachineOperand::REG, 13);
-    auto size = new MachineOperand(MachineOperand::IMM, cur_func->AllocSpace(0));
-    auto cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD, sp, sp, size);
+    auto size =
+        new MachineOperand(MachineOperand::IMM, cur_func->AllocSpace(0));
+    auto cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
+                                           sp, sp, size);
     cur_block->InsertInst(cur_inst);
-    auto fp = new MachineOperand(MachineOperand::REG, 11);
-    auto cur_inst1 = new StackMInstrcuton(cur_block, StackMInstrcuton::POP, fp);
-    cur_block->InsertInst(cur_inst1);
+    // auto fp = new MachineOperand(MachineOperand::REG, 11);
+    // auto cur_inst1 = new StackMInstrcuton(cur_block, StackMInstrcuton::POP,
+    //                                       cur_func->getSavedRegs(), fp);
+    // cur_block->InsertInst(cur_inst1);
     auto lr = new MachineOperand(MachineOperand::REG, 14);
-    auto cur_inst2 = new BranchMInstruction(cur_block, BranchMInstruction::BX, lr);
+    auto cur_inst2 =
+        new BranchMInstruction(cur_block, BranchMInstruction::BX, lr);
     cur_block->InsertInst(cur_inst2);
 }
 
@@ -728,7 +736,20 @@ GepInstruction::~GepInstruction() {
 }
 
 void CallInstruction::genMachineCode(AsmBuilder* builder) {
-    // TODO
+    // auto cur_block = builder->getBlock();
+    // MachineOperand *operand, *num;
+    // MachineInstruction* cur_inst;
+    // auto fp = new MachineOperand(MachineOperand::REG, 11);
+    // int idx = 0;
+    // for (auto it = operands.begin(); it != operands.end();
+    //      it++, idx++) {
+    //     operand = genMachineReg(idx);
+    //     num = genMachineImm(
+    //         dynamic_cast<TemporarySymbolEntry*>(operands[idx]->getEntry())
+    //             ->getOffset());
+    //     cur_inst = new LoadMInstruction(cur_block, operand, fp, num);
+    //     cur_block->InsertInst(cur_inst);
+    // }
 }
 
 void ZextInstruction::genMachineCode(AsmBuilder* builder) {

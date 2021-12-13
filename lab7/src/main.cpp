@@ -72,8 +72,8 @@ int main(int argc, char *argv[])
     if(dump_ir)
         unit.output();
     unit.genMachineCode(&mUnit);
-    // LinearScan linearScan(&mUnit);
-    // linearScan.allocateRegisters();
+    LinearScan linearScan(&mUnit);
+    linearScan.allocateRegisters();
     if(dump_asm)
         mUnit.output();
     return 0;

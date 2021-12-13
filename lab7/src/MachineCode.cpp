@@ -108,6 +108,18 @@ void MachineInstruction::PrintCond() {
     }
 }
 
+void MachineInstruction::insertBefore(MachineInstruction* inst) {
+    auto instructions = parent->getInsts();
+    auto it = std::find(instructions.begin(), instructions.end(), this);
+    instructions.insert(it, inst);
+}
+
+void MachineInstruction::insertAfter(MachineInstruction* inst) {
+    auto instructions = parent->getInsts();
+    auto it = std::find(instructions.begin(), instructions.end(), this);
+    instructions.insert(++it, inst);
+}
+
 BinaryMInstruction::BinaryMInstruction(MachineBlock* p,
                                        int op,
                                        MachineOperand* dst,
@@ -355,12 +367,15 @@ void CmpMInstruction::output() {
 
 StackMInstrcuton::StackMInstrcuton(MachineBlock* p,
                                    int op,
+                                   std::vector<MachineOperand*> srcs,
                                    MachineOperand* src,
                                    int cond) {
     this->parent = p;
     this->type = MachineInstruction::STACK;
     this->op = op;
     this->cond = cond;
+    for (auto it = srcs.begin(); it != srcs.end(); it++)
+        this->use_list.push_back(*it);
     this->use_list.push_back(src);
     src->setParent(this);
 }
@@ -392,8 +407,16 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
 void MachineBlock::output() {
     if (!inst_list.empty()) {
         fprintf(yyout, ".L%d:\n", this->no);
-        for (auto iter : inst_list)
+        for (auto iter : inst_list) {
+            if (iter->isBX()) {
+                auto fp = new MachineOperand(MachineOperand::REG, 11);
+                auto cur_inst1 =
+                    new StackMInstrcuton(this, StackMInstrcuton::POP,
+                                         parent->getSavedRegs(), fp);
+                cur_inst1->output();
+            }
             iter->output();
+        }
     }
 }
 
@@ -412,13 +435,24 @@ void MachineFunction::output() {
     // Traverse all the block in block_list to print assembly code.
     auto fp = new MachineOperand(MachineOperand::REG, 11);
     auto sp = new MachineOperand(MachineOperand::REG, 13);
-    (new StackMInstrcuton(nullptr, StackMInstrcuton::PUSH, fp))->output();
+    (new StackMInstrcuton(nullptr, StackMInstrcuton::PUSH, getSavedRegs(), fp))
+        ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
     auto size = new MachineOperand(MachineOperand::IMM, this->AllocSpace(0));
     (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, size))
         ->output();
-    for (auto iter : block_list)
+    for (auto iter : block_list) {
         iter->output();
+    }
+}
+
+std::vector<MachineOperand*> MachineFunction::getSavedRegs() {
+    std::vector<MachineOperand*> regs;
+    for (auto it = saved_regs.begin(); it != saved_regs.end(); it++) {
+        auto reg = new MachineOperand(MachineOperand::REG, *it);
+        regs.push_back(reg);
+    }
+    return regs;
 }
 
 void MachineUnit::PrintGlobalDecl() {
