@@ -30,7 +30,7 @@ OUTPUT_RES = $(addsuffix .res, $(basename $(TESTCASE)))
 OUTPUT_BIN = $(addsuffix .bin, $(basename $(TESTCASE)))
 OUTPUT_LOG = $(addsuffix .log, $(basename $(TESTCASE)))
 
-.phony:all app run gdb testlab4 testlab5 testlab6 testlab7 test clean clean-all clean-test clean-app llvmir gccasm
+.phony:all app run gdb testlab4 testlab5 testlab6 testlab7 test clean clean-all clean-test clean-app llvmir gccasm run1
 
 all:app
 
@@ -51,6 +51,12 @@ app:$(LEXER) $(PARSER) $(BINARY)
 
 run:app
 	@$(BINARY) -o example.s -S example.sy
+
+run1:app
+	@$(BINARY) -o example.s -S example.sy
+	arm-linux-gnueabihf-gcc example.s -o example
+	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
+	echo $$?
 
 gdb:app
 	@gdb $(BINARY)

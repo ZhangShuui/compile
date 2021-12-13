@@ -165,6 +165,7 @@ class RetInstruction : public Instruction {
 class CallInstruction : public Instruction {
    private:
     SymbolEntry* func;
+    Operand* dst;
 
    public:
     CallInstruction(Operand* dst,

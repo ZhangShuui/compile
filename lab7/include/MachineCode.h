@@ -85,6 +85,7 @@ class MachineInstruction {
     MachineBlock* getParent() const { return parent; };
     // 简单起见这样写了
     bool isBX() const { return type == BRANCH && op == 2; };
+    bool isStore() const { return type == STORE; };
 };
 
 class BinaryMInstruction : public MachineInstruction {
@@ -157,6 +158,7 @@ class StackMInstrcuton : public MachineInstruction {
                      int op,
                      std::vector<MachineOperand*> srcs,
                      MachineOperand* src,
+                     MachineOperand* src1 = nullptr,
                      int cond = MachineInstruction::NONE);
     void output();
 };
@@ -204,6 +206,7 @@ class MachineFunction {
     int stack_size;
     std::set<int> saved_regs;
     SymbolEntry* sym_ptr;
+    int paramsNum;
 
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
@@ -226,6 +229,7 @@ class MachineFunction {
     void addSavedRegs(int regno) { saved_regs.insert(regno); };
     void output();
     std::vector<MachineOperand*> getSavedRegs();
+    int getParamsNum() const { return paramsNum; };
 };
 
 class MachineUnit {

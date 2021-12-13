@@ -264,7 +264,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }
@@ -282,7 +282,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }
@@ -300,7 +300,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }
@@ -317,7 +317,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }
@@ -338,7 +338,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }
@@ -358,7 +358,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }
@@ -378,7 +378,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }
@@ -395,7 +395,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }
@@ -412,7 +412,7 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), true);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
     st->install(yytext, se);
     return ID;
 }

@@ -66,8 +66,12 @@ std::string ConstantSymbolEntry::toStr() {
 IdentifierSymbolEntry::IdentifierSymbolEntry(Type* type,
                                              std::string name,
                                              int scope,
+                                             int paramNo,
                                              bool sysy)
-    : SymbolEntry(type, SymbolEntry::VARIABLE), name(name), sysy(sysy) {
+    : SymbolEntry(type, SymbolEntry::VARIABLE),
+      name(name),
+      sysy(sysy),
+      paramNo(paramNo) {
     this->scope = scope;
     this->initial = false;
     this->label = -1;

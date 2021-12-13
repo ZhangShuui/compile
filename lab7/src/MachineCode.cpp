@@ -1,4 +1,5 @@
 #include "MachineCode.h"
+#include "Type.h"
 extern FILE* yyout;
 
 MachineOperand::MachineOperand(int tp, int val) {
@@ -76,6 +77,8 @@ void MachineOperand::output() {
         case LABEL:
             if (this->label.substr(0, 2) == ".L")
                 fprintf(yyout, "%s", this->label.c_str());
+            else if (this->label.substr(0, 1) == "@")
+                fprintf(yyout, "%s", this->label.c_str() + 1);
             else
                 fprintf(yyout, "addr_%s", this->label.c_str());
         default:
@@ -339,6 +342,13 @@ void BranchMInstruction::output() {
             this->use_list[0]->output();
             fprintf(yyout, "\n");
             break;
+        case BL:
+            fprintf(yyout, "\tbl");
+            PrintCond();
+            fprintf(yyout, " ");
+            this->use_list[0]->output();
+            fprintf(yyout, "\n");
+            break;
     }
 }
 
@@ -369,15 +379,18 @@ StackMInstrcuton::StackMInstrcuton(MachineBlock* p,
                                    int op,
                                    std::vector<MachineOperand*> srcs,
                                    MachineOperand* src,
+                                   MachineOperand* src1,
                                    int cond) {
     this->parent = p;
     this->type = MachineInstruction::STACK;
     this->op = op;
     this->cond = cond;
-    for (auto it = srcs.begin(); it != srcs.end(); it++)
-        this->use_list.push_back(*it);
+    if (srcs.size())
+        for (auto it = srcs.begin(); it != srcs.end(); it++)
+            this->use_list.push_back(*it);
     this->use_list.push_back(src);
-    src->setParent(this);
+    if (src1)
+        this->use_list.push_back(src1);
 }
 
 void StackMInstrcuton::output() {
@@ -402,18 +415,39 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
     this->parent = p;
     this->sym_ptr = sym_ptr;
     this->stack_size = 0;
+    this->paramsNum =
+        ((FunctionType*)(sym_ptr->getType()))->getParamsSe().size();
 };
 
 void MachineBlock::output() {
+    bool first = true;
+    int offset = 4;
+    int num = parent->getParamsNum();
     if (!inst_list.empty()) {
         fprintf(yyout, ".L%d:\n", this->no);
         for (auto iter : inst_list) {
             if (iter->isBX()) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
-                auto cur_inst1 =
-                    new StackMInstrcuton(this, StackMInstrcuton::POP,
-                                         parent->getSavedRegs(), fp);
-                cur_inst1->output();
+                auto lr = new MachineOperand(MachineOperand::REG, 14);
+                auto cur_inst = new StackMInstrcuton(
+                    this, StackMInstrcuton::POP, parent->getSavedRegs(), fp, lr);
+                cur_inst->output();
+            }
+            if (num > 4 && iter->isStore()) {
+                MachineOperand* operand = iter->getUse()[0];
+                if (operand->isReg() && operand->getReg() == 3) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        auto fp = new MachineOperand(MachineOperand::REG, 11);
+                        auto r3 = new MachineOperand(MachineOperand::REG, 3);
+                        auto off =
+                            new MachineOperand(MachineOperand::IMM, offset);
+                        offset += 4;
+                        auto cur_inst = new LoadMInstruction(this, r3, fp, off);
+                        cur_inst->output();
+                    }
+                }
             }
             iter->output();
         }
@@ -435,7 +469,8 @@ void MachineFunction::output() {
     // Traverse all the block in block_list to print assembly code.
     auto fp = new MachineOperand(MachineOperand::REG, 11);
     auto sp = new MachineOperand(MachineOperand::REG, 13);
-    (new StackMInstrcuton(nullptr, StackMInstrcuton::PUSH, getSavedRegs(), fp))
+    auto lr = new MachineOperand(MachineOperand::REG, 14);
+    (new StackMInstrcuton(nullptr, StackMInstrcuton::PUSH, getSavedRegs(), fp, lr))
         ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
     auto size = new MachineOperand(MachineOperand::IMM, this->AllocSpace(0));
@@ -444,6 +479,7 @@ void MachineFunction::output() {
     for (auto iter : block_list) {
         iter->output();
     }
+    fprintf(yyout, "\n");
 }
 
 std::vector<MachineOperand*> MachineFunction::getSavedRegs() {

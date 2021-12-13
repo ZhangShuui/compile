@@ -336,7 +336,12 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
         else if (id_se->isParam()) {
             // TODO: 这样分配的是虚拟寄存器 能对应到r0-r3嘛
             //  r4之后的参数需要一条load 哪里加 怎么判断是r4之后的参数
-            mope = new MachineOperand(MachineOperand::VREG, id_se->getLabel());
+            if (id_se->getParamNo() < 4)
+                mope = new MachineOperand(MachineOperand::REG,
+                                          id_se->getParamNo());
+            else
+                // 用r3代表一下
+                mope = new MachineOperand(MachineOperand::REG, 3);
         } else
             exit(0);
     }
@@ -611,7 +616,7 @@ CallInstruction::CallInstruction(Operand* dst,
                                  SymbolEntry* func,
                                  std::vector<Operand*> params,
                                  BasicBlock* insert_bb)
-    : Instruction(CALL, insert_bb), func(func) {
+    : Instruction(CALL, insert_bb), func(func), dst(dst) {
     operands.push_back(dst);
     if (dst)
         dst->setDef(this);
@@ -736,20 +741,50 @@ GepInstruction::~GepInstruction() {
 }
 
 void CallInstruction::genMachineCode(AsmBuilder* builder) {
-    // auto cur_block = builder->getBlock();
-    // MachineOperand *operand, *num;
-    // MachineInstruction* cur_inst;
+    auto cur_block = builder->getBlock();
+    MachineOperand* operand;  //, *num;
+    MachineInstruction* cur_inst;
     // auto fp = new MachineOperand(MachineOperand::REG, 11);
-    // int idx = 0;
-    // for (auto it = operands.begin(); it != operands.end();
-    //      it++, idx++) {
-    //     operand = genMachineReg(idx);
-    //     num = genMachineImm(
-    //         dynamic_cast<TemporarySymbolEntry*>(operands[idx]->getEntry())
-    //             ->getOffset());
-    //     cur_inst = new LoadMInstruction(cur_block, operand, fp, num);
-    //     cur_block->InsertInst(cur_inst);
-    // }
+    int idx = 0;
+    for (auto it = operands.begin(); it != operands.end(); it++, idx++) {
+        if (idx == 0)
+            continue;
+        if (idx == 5)
+            break;
+        operand = genMachineReg(idx - 1);
+        // num = genMachineImm(
+        //     dynamic_cast<TemporarySymbolEntry*>(operands[idx]->getEntry())
+        //         ->getOffset());
+        auto src = genMachineOperand(operands[idx]);
+        // cur_inst = new LoadMInstruction(cur_block, operand, fp, num);
+        cur_inst =
+            new MovMInstruction(cur_block, MovMInstruction::MOV, operand, src);
+        cur_block->InsertInst(cur_inst);
+    }
+    for (int i = operands.size() - 1; i > 4; i--) {
+        operand = genMachineOperand(operands[i]);
+        std::vector<MachineOperand*> vec;
+        cur_inst = new StackMInstrcuton(cur_block, StackMInstrcuton::PUSH, vec,
+                                        operand);
+        cur_block->InsertInst(cur_inst);
+    }
+    auto label = new MachineOperand(func->toStr().c_str());
+    cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BL, label);
+    cur_block->InsertInst(cur_inst);
+    if (operands.size() > 5) {
+        auto off = genMachineImm((operands.size() - 5) * 4);
+        auto sp = new MachineOperand(MachineOperand::REG, 13);
+        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
+                                          sp, sp, off);
+        cur_block->InsertInst(cur_inst);
+    }
+    if (dst) {
+        operand = genMachineOperand(dst);
+        auto r0 = new MachineOperand(MachineOperand::REG, 0);
+        cur_inst =
+            new MovMInstruction(cur_block, MovMInstruction::MOV, operand, r0);
+        cur_block->InsertInst(cur_inst);
+    }
 }
 
 void ZextInstruction::genMachineCode(AsmBuilder* builder) {

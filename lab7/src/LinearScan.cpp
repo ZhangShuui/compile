@@ -1,5 +1,6 @@
 #include "LinearScan.h"
 #include <algorithm>
+#include <iostream>
 #include "LiveVariableAnalysis.h"
 #include "MachineCode.h"
 
@@ -163,12 +164,14 @@ void LinearScan::genSpillCode() {
 }
 
 void LinearScan::expireOldIntervals(Interval* interval) {
-    for (auto& i : active) {
+    auto it = active.begin();
+    while (it != active.end()) {
+        //FIXME: 一会这样对一会那样对 无语了
         // 原算法有等号 这里改动了才对
-        if (i->end > interval->start)
+        if ((*it)->end >= interval->start)
             return;
-        active.erase(find(active.begin(), active.end(), i));
-        regs.push_back(i->rreg);
+        it = active.erase(find(active.begin(), active.end(), *it));
+        regs.push_back((*it)->rreg);
         sort(regs.begin(), regs.end());
     }
 }

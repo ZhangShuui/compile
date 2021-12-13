@@ -899,7 +899,7 @@ Type* Id::getType() {
     if (!arrIdx)
         return type;
     else if (!type->isArray()) {
-        fprintf(stderr, "1subscripted value is not an array\n");
+        fprintf(stderr, "subscripted value is not an array\n");
         return TypeSystem::voidType;
     } else {
         ArrayType* temp1 = (ArrayType*)type;
@@ -912,10 +912,10 @@ Type* Id::getType() {
             temp1 = (ArrayType*)(temp1->getElementType());
         }
         if (!temp2) {
-            fprintf(stderr, "2subscripted value is not an array\n");
+            fprintf(stderr, "subscripted value is not an array\n");
             return temp1;
         } else if (temp2->getNext()) {
-            fprintf(stderr, "3subscripted value is not an array\n");
+            fprintf(stderr, "subscripted value is not an array\n");
             return TypeSystem::voidType;
         }
     }

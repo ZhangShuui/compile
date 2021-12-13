@@ -16,6 +16,7 @@
     InitValueListExpr* top;
     int leftCnt = 0;
     int whileCnt = 0;
+    int paramNo = 0;
     #include <iostream>
 }
 
@@ -679,7 +680,9 @@ ConstInitValList
 FuncDef
     :
     Type ID {
+        // SymbolTable::resetLabel();
         identifiers = new SymbolTable(identifiers);
+        paramNo = 0;
     }
     LPAREN MaybeFuncFParams RPAREN {
         Type* funcType;
@@ -721,7 +724,7 @@ FuncFParams
 FuncFParam
     : Type ID {
         SymbolEntry* se;
-        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramNo++);
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();
         ((IdentifierSymbolEntry*)se)->setAddr(new Operand(se));
@@ -746,7 +749,7 @@ FuncFParam
             arr = arr1;
             stk.pop();
         }
-        se = new IdentifierSymbolEntry(arr, $2, identifiers->getLevel());
+        se = new IdentifierSymbolEntry(arr, $2, identifiers->getLevel(), paramNo++);
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();
         ((IdentifierSymbolEntry*)se)->setAddr(new Operand(se));

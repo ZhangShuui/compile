@@ -48,6 +48,7 @@ class SymbolTable {
     SymbolTable* getPrev() { return prev; };
     int getLevel() { return level; };
     static int getLabel() { return counter++; };
+    static void resetLabel() { counter = 0; };
 };
 
 /*  
@@ -106,6 +107,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     bool sysy;
     int* arrayValue;
     bool allZero;
+    int paramNo;
     Operand* addr;  // The address of the identifier.
                     // You can add any field you need here.
 
@@ -113,6 +115,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     IdentifierSymbolEntry(Type* type,
                           std::string name,
                           int scope,
+                          int paramNo = -1,
                           bool sysy = false);
     virtual ~IdentifierSymbolEntry(){};
     std::string toStr();
@@ -131,6 +134,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     void setLabel() { label = SymbolTable::getLabel(); };
     void setAllZero() { allZero = true; };
     bool isAllZero() const { return allZero; };
+    int getParamNo() const { return paramNo; };
 
     // You can add any function you need here.
 };
