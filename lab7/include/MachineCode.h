@@ -234,6 +234,7 @@ class MachineFunction {
 
 class MachineUnit {
    private:
+    std::vector<SymbolEntry*> global_list;
     std::vector<MachineFunction*> func_list;
     void PrintGlobalDecl();
 
@@ -245,6 +246,7 @@ class MachineUnit {
     std::vector<MachineFunction*>::iterator end() { return func_list.end(); };
     void InsertFunc(MachineFunction* func) { func_list.push_back(func); };
     void output();
+    void insertGlobal(SymbolEntry*);
 };
 
 #endif

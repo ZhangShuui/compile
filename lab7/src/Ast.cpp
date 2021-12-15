@@ -7,6 +7,7 @@
 #include "Type.h"
 #include "Unit.h"
 extern Unit unit;
+extern MachineUnit mUnit;
 
 #include <iostream>
 
@@ -452,6 +453,7 @@ void DeclStmt::genCode() {
         addr = new Operand(addr_se);
         se->setAddr(addr);
         unit.insertGlobal(se);
+        mUnit.insertGlobal(se);
     } else if (se->isLocal() || se->isParam()) {
         Function* func = builder->getInsertBB()->getParent();
         BasicBlock* entry = func->getEntry();

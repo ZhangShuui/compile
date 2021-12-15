@@ -106,9 +106,11 @@ void IdentifierSymbolEntry::setArrayValue(int* arrayValue) {
 
 std::string IdentifierSymbolEntry::toStr() {
     std::ostringstream buffer;
-    if (label < 0)
-        buffer << '@' << name;
-    else
+    if (label < 0) {
+        if (type->isFunc())
+            buffer << '@';
+        buffer << name;
+    } else
         buffer << "%t" << label;
     return buffer.str();
 }

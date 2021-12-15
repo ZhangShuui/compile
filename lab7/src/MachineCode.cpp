@@ -104,7 +104,7 @@ void MachineInstruction::PrintCond() {
             fprintf(yyout, "gt");
             break;
         case GE:
-            fprintf(yyout, "gt");
+            fprintf(yyout, "ge");
             break;
         default:
             break;
@@ -306,7 +306,9 @@ MovMInstruction::MovMInstruction(MachineBlock* p,
 }
 
 void MovMInstruction::output() {
-    fprintf(yyout, "\tmov ");
+    fprintf(yyout, "\tmov");
+    PrintCond();
+    fprintf(yyout, " ");
     this->def_list[0]->output();
     fprintf(yyout, ", ");
     this->use_list[0]->output();
@@ -389,8 +391,11 @@ StackMInstrcuton::StackMInstrcuton(MachineBlock* p,
         for (auto it = srcs.begin(); it != srcs.end(); it++)
             this->use_list.push_back(*it);
     this->use_list.push_back(src);
-    if (src1)
+    src->setParent(this);
+    if (src1) {
         this->use_list.push_back(src1);
+        src1->setParent(this);
+    }
 }
 
 void StackMInstrcuton::output() {
@@ -421,7 +426,7 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
 
 void MachineBlock::output() {
     bool first = true;
-    int offset = 4;
+    int offset = (parent->getSavedRegs().size() + 2) * 4;
     int num = parent->getParamsNum();
     if (!inst_list.empty()) {
         fprintf(yyout, ".L%d:\n", this->no);
@@ -429,8 +434,9 @@ void MachineBlock::output() {
             if (iter->isBX()) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto lr = new MachineOperand(MachineOperand::REG, 14);
-                auto cur_inst = new StackMInstrcuton(
-                    this, StackMInstrcuton::POP, parent->getSavedRegs(), fp, lr);
+                auto cur_inst =
+                    new StackMInstrcuton(this, StackMInstrcuton::POP,
+                                         parent->getSavedRegs(), fp, lr);
                 cur_inst->output();
             }
             if (num > 4 && iter->isStore()) {
@@ -470,7 +476,8 @@ void MachineFunction::output() {
     auto fp = new MachineOperand(MachineOperand::REG, 11);
     auto sp = new MachineOperand(MachineOperand::REG, 13);
     auto lr = new MachineOperand(MachineOperand::REG, 14);
-    (new StackMInstrcuton(nullptr, StackMInstrcuton::PUSH, getSavedRegs(), fp, lr))
+    (new StackMInstrcuton(nullptr, StackMInstrcuton::PUSH, getSavedRegs(), fp,
+                          lr))
         ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
     auto size = new MachineOperand(MachineOperand::IMM, this->AllocSpace(0));
@@ -492,8 +499,38 @@ std::vector<MachineOperand*> MachineFunction::getSavedRegs() {
 }
 
 void MachineUnit::PrintGlobalDecl() {
-    // TODO:
-    // You need to print global variable/const declarition code;
+    std::vector<int> constIdx;
+    if (!global_list.empty())
+        fprintf(yyout, "\t.data\n");
+    for (long unsigned int i = 0; i < global_list.size(); i++) {
+        IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)global_list[i];
+        if (se->isConstant()) {
+            constIdx.push_back(i);
+        } else {
+            fprintf(yyout, "\t.global %s\n", se->toStr().c_str());
+            fprintf(yyout, "\t.align 4\n");
+            fprintf(yyout, "\t.size %s, %d\n", se->toStr().c_str(),
+                    se->getType()->getSize() / 8);
+            fprintf(yyout, "%s:\n", se->toStr().c_str());
+            if (!se->getType()->isArray()) {
+                fprintf(yyout, "\t.word %d\n", se->getValue());
+            }
+        }
+    }
+    if (!constIdx.empty()) {
+        fprintf(yyout, "\t.section .rodata\n");
+        for (auto i : constIdx) {
+            IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)global_list[i];
+            fprintf(yyout, "\t.global %s\n", se->toStr().c_str());
+            fprintf(yyout, "\t.align 4\n");
+            fprintf(yyout, "\t.size %s, %d\n", se->toStr().c_str(),
+                    se->getType()->getSize() / 8);
+            fprintf(yyout, "%s:\n", se->toStr().c_str());
+            if (!se->getType()->isArray()) {
+                fprintf(yyout, "\t.word %d\n", se->getValue());
+            }
+        }
+    }
 }
 
 void MachineUnit::output() {
@@ -506,6 +543,16 @@ void MachineUnit::output() {
     fprintf(yyout, "\t.arch_extension crc\n");
     fprintf(yyout, "\t.arm\n");
     PrintGlobalDecl();
+    fprintf(yyout, "\t.text\n");
     for (auto iter : func_list)
         iter->output();
+    for (auto s : global_list) {
+        IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)s;
+        fprintf(yyout, "addr_%s:\n", se->toStr().c_str());
+        fprintf(yyout, "\t.word %s\n", se->toStr().c_str());
+    }
+}
+
+void MachineUnit::insertGlobal(SymbolEntry* se) {
+    global_list.push_back(se);
 }
