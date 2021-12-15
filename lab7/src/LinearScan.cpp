@@ -166,12 +166,10 @@ void LinearScan::genSpillCode() {
 void LinearScan::expireOldIntervals(Interval* interval) {
     auto it = active.begin();
     while (it != active.end()) {
-        //FIXME: 一会这样对一会那样对 无语了
-        // 原算法有等号 这里改动了才对
         if ((*it)->end >= interval->start)
             return;
-        it = active.erase(find(active.begin(), active.end(), *it));
         regs.push_back((*it)->rreg);
+        it = active.erase(find(active.begin(), active.end(), *it));
         sort(regs.begin(), regs.end());
     }
 }
