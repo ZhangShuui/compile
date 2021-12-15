@@ -372,7 +372,10 @@ void AllocaInstruction::genMachineCode(AsmBuilder* builder) {
      * Allocate stack space for local variabel
      * Store frame offset in symbol entry */
     auto cur_func = builder->getFunction();
-    int offset = cur_func->AllocSpace(4);
+    int size = se->getType()->getSize() / 8;
+    if (size < 0)
+        size = -size;
+    int offset = cur_func->AllocSpace(size);
     dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())
         ->setOffset(-offset);
 }
@@ -454,8 +457,11 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder) {
         cur_inst = new StoreMInstruction(cur_block, src, internal_reg1);
         cur_block->InsertInst(cur_inst);
     }
-    // store to temporary
-    // 应该不会发生吧 先不写
+    // store to pointer
+    else if (operands[0]->getType()->isPtr()) {
+        cur_inst = new StoreMInstruction(cur_block, src, dst);
+        cur_block->InsertInst(cur_inst);
+    }
 }
 
 void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
@@ -836,5 +842,71 @@ void XorInstruction::genMachineCode(AsmBuilder* builder) {
 }
 
 void GepInstruction::genMachineCode(AsmBuilder* builder) {
-    // TODO
+    // FIXME: 连续的gep有问题 后续可以利用前面算出的地址
+    auto cur_block = builder->getBlock();
+    MachineInstruction* cur_inst;
+    auto dst = genMachineOperand(operands[0]);
+    auto idx = genMachineOperand(operands[2]);
+    MachineOperand* base;
+    int size;
+    auto idx1 = genMachineVReg();
+    if (idx->isImm()) {
+        if (idx->getVal() < 255) {
+            cur_inst =
+                new MovMInstruction(cur_block, MovMInstruction::MOV, idx1, idx);
+        } else {
+            cur_inst = new LoadMInstruction(cur_block, idx1, idx);
+        }
+        idx = new MachineOperand(*idx1);
+        cur_block->InsertInst(cur_inst);
+    }
+    if (first) {
+        size =
+            ((PointerType*)(operands[1]->getType()))->getType()->getSize() / 8;
+    } else {
+        int offset =
+            ((TemporarySymbolEntry*)(operands[1]->getEntry()))->getOffset();
+        base = genMachineVReg();
+        if (offset > -255 && offset < 255) {
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
+                                           base, genMachineImm(offset));
+        } else {
+            cur_inst =
+                new LoadMInstruction(cur_block, base, genMachineImm(offset));
+        }
+        cur_block->InsertInst(cur_inst);
+        ArrayType* type =
+            (ArrayType*)(((PointerType*)(operands[1]->getType()))->getType());
+        size = type->getElementType()->getSize() / 8;
+    }
+    auto size1 = genMachineVReg();
+    if (size > -255 && size < 255) {
+        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, size1,
+                                       genMachineImm(size));
+    } else {
+        cur_inst = new LoadMInstruction(cur_block, size1, genMachineImm(size));
+    }
+    cur_block->InsertInst(cur_inst);
+    auto off = genMachineVReg();
+    cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::MUL, off,
+                                      idx, size1);
+    off = new MachineOperand(*off);
+    cur_block->InsertInst(cur_inst);
+    if (first) {
+        auto arr = genMachineOperand(operands[1]);
+        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
+                                          dst, arr, off);
+        cur_block->InsertInst(cur_inst);
+    } else {
+        auto addr = genMachineVReg();
+        auto base1 = new MachineOperand(*base);
+        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
+                                          addr, base1, off);
+        cur_block->InsertInst(cur_inst);
+        addr = new MachineOperand(*addr);
+        auto fp = genMachineReg(11);
+        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
+                                          dst, fp, addr);
+        cur_block->InsertInst(cur_inst);
+    }
 }
