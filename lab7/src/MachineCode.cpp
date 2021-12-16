@@ -81,7 +81,7 @@ void MachineOperand::output() {
             else if (this->label.substr(0, 1) == "@")
                 fprintf(yyout, "%s", this->label.c_str() + 1);
             else
-                fprintf(yyout, "addr_%s", this->label.c_str());
+                fprintf(yyout, "addr_%s%d", this->label.c_str(), parent->getParent()->getParent()->getParent()->getN());
         default:
             break;
     }
@@ -478,6 +478,7 @@ void MachineBlock::output() {
             if (count % 500 == 0) {
                 fprintf(yyout, "\tb .C%d\n", count);
                 fprintf(yyout, ".LTORG\n");
+                parent->getParent()->printGlobal();
                 fprintf(yyout, ".C%d:\n", count);
             }
         }
@@ -515,8 +516,17 @@ void MachineFunction::output() {
         (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, size))
             ->output();
     }
+    int count = 0;
     for (auto iter : block_list) {
         iter->output();
+        count += iter->getSize();
+        if(count > 160){
+            fprintf(yyout, "\tb .F%d\n", parent->getN());
+            fprintf(yyout, ".LTORG\n");
+            parent->printGlobal();
+            fprintf(yyout, ".F%d:\n", parent->getN()-1);
+            count = 0;
+        }
     }
     fprintf(yyout, "\n");
 }
@@ -532,12 +542,15 @@ std::vector<MachineOperand*> MachineFunction::getSavedRegs() {
 
 void MachineUnit::PrintGlobalDecl() {
     std::vector<int> constIdx;
+    std::vector<int> zeroIdx;
     if (!global_list.empty())
         fprintf(yyout, "\t.data\n");
     for (long unsigned int i = 0; i < global_list.size(); i++) {
         IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)global_list[i];
         if (se->getConst()) {
             constIdx.push_back(i);
+        } else if (se->isAllZero()) {
+            zeroIdx.push_back(i);
         } else {
             fprintf(yyout, "\t.global %s\n", se->toStr().c_str());
             fprintf(yyout, "\t.align 4\n");
@@ -575,6 +588,15 @@ void MachineUnit::PrintGlobalDecl() {
             }
         }
     }
+    if (!zeroIdx.empty()) {
+        for (auto i : zeroIdx) {
+            IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)global_list[i];
+            if (se->getType()->isArray()) {
+                fprintf(yyout, "\t.comm %s, %d, 4\n", se->toStr().c_str(),
+                        se->getType()->getSize() / 8);
+            }
+        }
+    }
 }
 
 void MachineUnit::output() {
@@ -590,13 +612,18 @@ void MachineUnit::output() {
     fprintf(yyout, "\t.text\n");
     for (auto iter : func_list)
         iter->output();
-    for (auto s : global_list) {
-        IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)s;
-        fprintf(yyout, "addr_%s:\n", se->toStr().c_str());
-        fprintf(yyout, "\t.word %s\n", se->toStr().c_str());
-    }
+    printGlobal();
 }
 
 void MachineUnit::insertGlobal(SymbolEntry* se) {
     global_list.push_back(se);
+}
+
+void MachineUnit::printGlobal(){
+    for (auto s : global_list) {
+        IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)s;
+        fprintf(yyout, "addr_%s%d:\n", se->toStr().c_str(), n);
+        fprintf(yyout, "\t.word %s\n", se->toStr().c_str());
+    }
+    n++;
 }

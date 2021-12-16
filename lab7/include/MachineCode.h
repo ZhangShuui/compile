@@ -199,6 +199,8 @@ class MachineBlock {
     void output();
     int getCmpCond() const { return cmpCond; };
     void setCmpCond(int cond) { cmpCond = cond; };
+    int getSize() const { return inst_list.size(); };
+    MachineFunction* getParent() const { return parent; };
 };
 
 class MachineFunction {
@@ -209,6 +211,7 @@ class MachineFunction {
     std::set<int> saved_regs;
     SymbolEntry* sym_ptr;
     int paramsNum;
+    static int label;
 
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
@@ -232,13 +235,16 @@ class MachineFunction {
     void output();
     std::vector<MachineOperand*> getSavedRegs();
     int getParamsNum() const { return paramsNum; };
+    MachineUnit* getParent() const { return parent; };
 };
+
 
 class MachineUnit {
    private:
     std::vector<SymbolEntry*> global_list;
     std::vector<MachineFunction*> func_list;
     void PrintGlobalDecl();
+    int n;
 
    public:
     std::vector<MachineFunction*>& getFuncs() { return func_list; };
@@ -249,6 +255,8 @@ class MachineUnit {
     void InsertFunc(MachineFunction* func) { func_list.push_back(func); };
     void output();
     void insertGlobal(SymbolEntry*);
+    void printGlobal();
+    int getN() const { return n; };
 };
 
 #endif
