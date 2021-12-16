@@ -108,6 +108,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     int* arrayValue;
     bool allZero;
     int paramNo;
+    bool constant;
     Operand* addr;  // The address of the identifier.
                     // You can add any field you need here.
 
@@ -135,6 +136,8 @@ class IdentifierSymbolEntry : public SymbolEntry {
     void setAllZero() { allZero = true; };
     bool isAllZero() const { return allZero; };
     int getParamNo() const { return paramNo; };
+    void setConst() { constant = true;};
+    bool getConst() const { return constant; };
 
     // You can add any function you need here.
 };

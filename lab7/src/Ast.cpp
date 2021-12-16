@@ -318,6 +318,7 @@ void Id::genCode() {
             ExprNode* idx = arrIdx;
             bool flag = false;
             bool pointer = false;
+            bool firstFlag = true;
             while (true) {
                 if (((ArrayType*)type1)->getLength() == -1) {
                     Operand* dst1 = new Operand(new TemporarySymbolEntry(
@@ -338,8 +339,12 @@ void Id::genCode() {
                 }
 
                 idx->genCode();
-                new GepInstruction(tempDst, tempSrc, idx->getOperand(), bb,
-                                   flag);
+                auto gep = new GepInstruction(tempDst, tempSrc,
+                                              idx->getOperand(), bb, flag);
+                if (!flag && firstFlag) {
+                    gep->setFirst();
+                    firstFlag = false;
+                }
                 if (flag)
                     flag = false;
                 if (type == TypeSystem::intType ||
@@ -374,7 +379,8 @@ void Id::genCode() {
             } else {
                 Operand* idx = new Operand(
                     new ConstantSymbolEntry(TypeSystem::intType, 0));
-                new GepInstruction(dst, addr, idx, bb);
+                auto gep = new GepInstruction(dst, addr, idx, bb);
+                gep->setFirst();
             }
         }
     }
@@ -497,6 +503,7 @@ void DeclStmt::genCode() {
                         Operand* tempSrc = addr;
                         Operand* tempDst;
                         Operand* index;
+                        bool flag = true;
                         int i = 1;
                         while (true) {
                             tempDst = new Operand(new TemporarySymbolEntry(
@@ -505,7 +512,12 @@ void DeclStmt::genCode() {
                             index = (new Constant(new ConstantSymbolEntry(
                                          TypeSystem::intType, idx[i++])))
                                         ->getOperand();
-                            new GepInstruction(tempDst, tempSrc, index, bb);
+                            auto gep =
+                                new GepInstruction(tempDst, tempSrc, index, bb);
+                            if (flag) {
+                                gep->setFirst();
+                                flag = false;
+                            }
                             if (type == TypeSystem::intType ||
                                 type == TypeSystem::constIntType)
                                 break;

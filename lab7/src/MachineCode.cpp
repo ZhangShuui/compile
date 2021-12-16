@@ -504,7 +504,7 @@ void MachineUnit::PrintGlobalDecl() {
         fprintf(yyout, "\t.data\n");
     for (long unsigned int i = 0; i < global_list.size(); i++) {
         IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)global_list[i];
-        if (se->isConstant()) {
+        if (se->getConst()) {
             constIdx.push_back(i);
         } else {
             fprintf(yyout, "\t.global %s\n", se->toStr().c_str());
@@ -514,6 +514,12 @@ void MachineUnit::PrintGlobalDecl() {
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
                 fprintf(yyout, "\t.word %d\n", se->getValue());
+            }else{
+                int n = se->getType()->getSize() / 32;
+                int* p = se->getArrayValue();
+                for (int i = 0; i < n; i++) {
+                    fprintf(yyout, "\t.word %d\n", p[i]);
+                }
             }
         }
     }
@@ -528,6 +534,12 @@ void MachineUnit::PrintGlobalDecl() {
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
                 fprintf(yyout, "\t.word %d\n", se->getValue());
+            } else {
+                int n = se->getType()->getSize() / 32;
+                int* p = se->getArrayValue();
+                for (int i = 0; i < n; i++) {
+                    fprintf(yyout, "\t.word %d\n", p[i]);
+                }
             }
         }
     }

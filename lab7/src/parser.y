@@ -435,6 +435,7 @@ ConstDef
     : ID ASSIGN ConstInitVal {
         SymbolEntry* se;
         se = new IdentifierSymbolEntry(TypeSystem::constIntType, $1, identifiers->getLevel());
+        ((IdentifierSymbolEntry*)se)->setConst();
         if(!identifiers->install($1, se))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         identifiers->install($1, se);
@@ -462,6 +463,7 @@ ConstDef
         idx = 0;
         std::stack<InitValueListExpr*>().swap(stk);
         se = new IdentifierSymbolEntry(type, $1, identifiers->getLevel());
+        ((IdentifierSymbolEntry*)se)->setConst();
         $<se>$ = se;
         arrayValue = new int[arrayType->getSize()];
     }

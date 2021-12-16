@@ -197,6 +197,7 @@ class XorInstruction : public Instruction {
 
 class GepInstruction : public Instruction {
    private:
+    bool paramFirst;
     bool first;
 
    public:
@@ -204,10 +205,11 @@ class GepInstruction : public Instruction {
                    Operand* arr,
                    Operand* idx,
                    BasicBlock* insert_bb = nullptr,
-                   bool first = false);
+                   bool paramFirst = false);
     ~GepInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    void setFirst() { first = true; };
 };
 
 #endif

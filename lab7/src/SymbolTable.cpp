@@ -76,6 +76,7 @@ IdentifierSymbolEntry::IdentifierSymbolEntry(Type* type,
     this->initial = false;
     this->label = -1;
     this->allZero = false;
+    this->constant = false;
 }
 
 void IdentifierSymbolEntry::setValue(int value) {

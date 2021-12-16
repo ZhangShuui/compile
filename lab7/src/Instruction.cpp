@@ -389,7 +389,7 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder) {
             ->isGlobal()) {
         auto dst = genMachineOperand(operands[0]);
         auto internal_reg1 = genMachineVReg();
-        // auto internal_reg2 = new MachineOperand(*dst);
+        auto internal_reg2 = new MachineOperand(*internal_reg1);
         auto src = genMachineOperand(operands[1]);
         // example: load r0, addr_a
         cur_inst = new LoadMInstruction(cur_block, internal_reg1, src);
@@ -397,7 +397,7 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder) {
         // example: load r1, [r0]
         // TODO: dst 和 internal_reg2 区别是啥 不是拷贝得到的嘛
         // 把下面的2改成1了 感觉这样才对
-        cur_inst = new LoadMInstruction(cur_block, dst, internal_reg1);
+        cur_inst = new LoadMInstruction(cur_block, dst, internal_reg2);
         cur_block->InsertInst(cur_inst);
     }
     // Load local operand
@@ -725,14 +725,15 @@ GepInstruction::GepInstruction(Operand* dst,
                                Operand* arr,
                                Operand* idx,
                                BasicBlock* insert_bb,
-                               bool first)
-    : Instruction(GEP, insert_bb), first(first) {
+                               bool paramFirst)
+    : Instruction(GEP, insert_bb), paramFirst(paramFirst) {
     operands.push_back(dst);
     operands.push_back(arr);
     operands.push_back(idx);
     dst->setDef(this);
     arr->addUse(this);
     idx->addUse(this);
+    first = false;
 }
 
 void GepInstruction::output() const {
@@ -743,7 +744,7 @@ void GepInstruction::output() const {
     // Type* type = ((PointerType*)(arr->getType()))->getType();
     // ArrayType* type1 = (ArrayType*)(((ArrayType*)type)->getArrayType());
     // if (type->isInt() || (type1 && type1->getLength() == -1))
-    if (first)
+    if (paramFirst)
         fprintf(yyout, "  %s = getelementptr inbounds %s, %s %s, i32 %s\n",
                 dst->toStr().c_str(),
                 arrType.substr(0, arrType.size() - 1).c_str(), arrType.c_str(),
@@ -860,21 +861,30 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
         idx = new MachineOperand(*idx1);
         cur_block->InsertInst(cur_inst);
     }
-    if (first) {
+    if (paramFirst) {
         size =
             ((PointerType*)(operands[1]->getType()))->getType()->getSize() / 8;
     } else {
-        int offset =
-            ((TemporarySymbolEntry*)(operands[1]->getEntry()))->getOffset();
-        base = genMachineVReg();
-        if (offset > -255 && offset < 255) {
-            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
-                                           base, genMachineImm(offset));
-        } else {
-            cur_inst =
-                new LoadMInstruction(cur_block, base, genMachineImm(offset));
+        if (first) {
+            base = genMachineVReg();
+            if (((IdentifierSymbolEntry*)(operands[1]->getEntry()))
+                    ->isGlobal()) {
+                auto src = genMachineOperand(operands[1]);
+                cur_inst = new LoadMInstruction(cur_block, base, src);
+            } else {
+                int offset = ((TemporarySymbolEntry*)(operands[1]->getEntry()))
+                                 ->getOffset();
+                if (offset > -255 && offset < 255) {
+                    cur_inst =
+                        new MovMInstruction(cur_block, MovMInstruction::MOV,
+                                            base, genMachineImm(offset));
+                } else {
+                    cur_inst = new LoadMInstruction(cur_block, base,
+                                                    genMachineImm(offset));
+                }
+            }
+            cur_block->InsertInst(cur_inst);
         }
-        cur_block->InsertInst(cur_inst);
         ArrayType* type =
             (ArrayType*)(((PointerType*)(operands[1]->getType()))->getType());
         size = type->getElementType()->getSize() / 8;
@@ -892,7 +902,7 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
                                       idx, size1);
     off = new MachineOperand(*off);
     cur_block->InsertInst(cur_inst);
-    if (first) {
+    if (paramFirst || !first) {
         auto arr = genMachineOperand(operands[1]);
         cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
                                           dst, arr, off);
@@ -904,9 +914,14 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
                                           addr, base1, off);
         cur_block->InsertInst(cur_inst);
         addr = new MachineOperand(*addr);
-        auto fp = genMachineReg(11);
-        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
-                                          dst, fp, addr);
+        if (((IdentifierSymbolEntry*)(operands[1]->getEntry()))->isGlobal()) {
+            cur_inst =
+                new MovMInstruction(cur_block, MovMInstruction::MOV, dst, addr);
+        } else {
+            auto fp = genMachineReg(11);
+            cur_inst = new BinaryMInstruction(
+                cur_block, BinaryMInstruction::ADD, dst, fp, addr);
+        }
         cur_block->InsertInst(cur_inst);
     }
 }
