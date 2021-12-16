@@ -111,6 +111,10 @@ void LinearScan::computeLiveIntervals() {
 
 bool LinearScan::linearScanRegisterAllocation() {
     bool success = true;
+    active.clear();
+    regs.clear();
+    for (int i = 4; i < 11; i++)
+        regs.push_back(i);
     for (auto& i : intervals) {
         expireOldIntervals(i);
         if (regs.empty()) {
@@ -149,15 +153,17 @@ void LinearScan::genSpillCode() {
          */
         interval->disp = -func->AllocSpace(4);
         auto off = new MachineOperand(MachineOperand::IMM, interval->disp);
-        auto sp = new MachineOperand(MachineOperand::REG, 13);
+        auto fp = new MachineOperand(MachineOperand::REG, 11);
         for (auto use : interval->uses) {
-            auto inst = new LoadMInstruction(use->getParent()->getParent(), use,
-                                             sp, off);
+            auto temp = new MachineOperand(*use);
+            auto inst = new LoadMInstruction(use->getParent()->getParent(),
+                                             temp, fp, off);
             use->getParent()->insertBefore(inst);
         }
         for (auto def : interval->defs) {
+            auto temp = new MachineOperand(*def);
             auto inst = new StoreMInstruction(def->getParent()->getParent(),
-                                              def, sp, off);
+                                              temp, fp, off);
             def->getParent()->insertAfter(inst);
         }
     }

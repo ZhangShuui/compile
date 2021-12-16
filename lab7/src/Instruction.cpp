@@ -374,7 +374,7 @@ void AllocaInstruction::genMachineCode(AsmBuilder* builder) {
     auto cur_func = builder->getFunction();
     int size = se->getType()->getSize() / 8;
     if (size < 0)
-        size = -size;
+        size = 4;
     int offset = cur_func->AllocSpace(size);
     dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())
         ->setOffset(-offset);
@@ -395,8 +395,6 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder) {
         cur_inst = new LoadMInstruction(cur_block, internal_reg1, src);
         cur_block->InsertInst(cur_inst);
         // example: load r1, [r0]
-        // TODO: dst 和 internal_reg2 区别是啥 不是拷贝得到的嘛
-        // 把下面的2改成1了 感觉这样才对
         cur_inst = new LoadMInstruction(cur_block, dst, internal_reg2);
         cur_block->InsertInst(cur_inst);
     }
@@ -406,9 +404,14 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder) {
         // example: load r1, [r0, #4]
         auto dst = genMachineOperand(operands[0]);
         auto src1 = genMachineReg(11);
-        auto src2 = genMachineImm(
-            dynamic_cast<TemporarySymbolEntry*>(operands[1]->getEntry())
-                ->getOffset());
+        int off = dynamic_cast<TemporarySymbolEntry*>(operands[1]->getEntry())
+                      ->getOffset();
+        auto src2 = genMachineImm(off);
+        if(off > 255 || off < -255){
+            auto operand = genMachineVReg();
+            cur_block->InsertInst((new LoadMInstruction(cur_block, operand, src2)));
+            src2 = operand;
+        }
         cur_inst = new LoadMInstruction(cur_block, dst, src1, src2);
         cur_block->InsertInst(cur_inst);
     }
@@ -439,9 +442,14 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder) {
     if (operands[0]->getEntry()->isTemporary() && operands[0]->getDef() &&
         operands[0]->getDef()->isAlloc()) {
         auto src1 = genMachineReg(11);
-        auto src2 = genMachineImm(
-            dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())
-                ->getOffset());
+        int off = dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())
+                      ->getOffset();
+        auto src2 = genMachineImm(off);
+        if(off > 255 || off < -255){
+            auto operand = genMachineVReg();
+            cur_block->InsertInst((new LoadMInstruction(cur_block, operand, src2)));
+            src2 = operand;
+        }
         cur_inst = new StoreMInstruction(cur_block, src, src1, src2);
         cur_block->InsertInst(cur_inst);
     }
@@ -915,8 +923,7 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
         cur_block->InsertInst(cur_inst);
         addr = new MachineOperand(*addr);
         if (((IdentifierSymbolEntry*)(operands[1]->getEntry()))->isGlobal()) {
-            cur_inst =
-                new MovMInstruction(cur_block, MovMInstruction::MOV, dst, addr);
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst, addr);
         } else {
             auto fp = genMachineReg(11);
             cur_inst = new BinaryMInstruction(

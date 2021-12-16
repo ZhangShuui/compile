@@ -1,4 +1,5 @@
 #include "MachineCode.h"
+#include <iostream>
 #include "Type.h"
 extern FILE* yyout;
 
@@ -112,13 +113,13 @@ void MachineInstruction::PrintCond() {
 }
 
 void MachineInstruction::insertBefore(MachineInstruction* inst) {
-    auto instructions = parent->getInsts();
+    auto& instructions = parent->getInsts();
     auto it = std::find(instructions.begin(), instructions.end(), this);
     instructions.insert(it, inst);
 }
 
 void MachineInstruction::insertAfter(MachineInstruction* inst) {
-    auto instructions = parent->getInsts();
+    auto& instructions = parent->getInsts();
     auto it = std::find(instructions.begin(), instructions.end(), this);
     instructions.insert(++it, inst);
 }
@@ -428,10 +429,11 @@ void MachineBlock::output() {
     bool first = true;
     int offset = (parent->getSavedRegs().size() + 2) * 4;
     int num = parent->getParamsNum();
+    int count = 0;
     if (!inst_list.empty()) {
         fprintf(yyout, ".L%d:\n", this->no);
-        for (auto iter : inst_list) {
-            if (iter->isBX()) {
+        for (auto it = inst_list.begin(); it != inst_list.end(); it++) {
+            if ((*it)->isBX()) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto lr = new MachineOperand(MachineOperand::REG, 14);
                 auto cur_inst =
@@ -439,8 +441,8 @@ void MachineBlock::output() {
                                          parent->getSavedRegs(), fp, lr);
                 cur_inst->output();
             }
-            if (num > 4 && iter->isStore()) {
-                MachineOperand* operand = iter->getUse()[0];
+            if (num > 4 && (*it)->isStore()) {
+                MachineOperand* operand = (*it)->getUse()[0];
                 if (operand->isReg() && operand->getReg() == 3) {
                     if (first) {
                         first = false;
@@ -455,16 +457,38 @@ void MachineBlock::output() {
                     }
                 }
             }
-            iter->output();
+            if ((*it)->isAdd()) {
+                auto dst = (*it)->getDef()[0];
+                auto src1 = (*it)->getUse()[0];
+                if (dst->isReg() && dst->getReg() == 13 && src1->isReg() &&
+                    src1->getReg() == 13 && (*(it + 1))->isBX()) {
+                    int size = parent->AllocSpace(0);
+                    if (size < -255 || size > 255) {
+                        auto r1 = new MachineOperand(MachineOperand::REG, 1);
+                        auto off =
+                            new MachineOperand(MachineOperand::IMM, size);
+                        (new LoadMInstruction(nullptr, r1, off))->output();
+                        (*it)->getUse()[1]->setReg(1);
+                    } else
+                        (*it)->getUse()[1]->setVal(size);
+                }
+            }
+            (*it)->output();
+            count++;
+            if (count % 500 == 0) {
+                fprintf(yyout, "\tb .C%d\n", count);
+                fprintf(yyout, ".LTORG\n");
+                fprintf(yyout, ".C%d:\n", count);
+            }
         }
     }
 }
 
 void MachineFunction::output() {
-    const char* func_name = this->sym_ptr->toStr().c_str() + 1;
-    fprintf(yyout, "\t.global %s\n", func_name);
-    fprintf(yyout, "\t.type %s , %%function\n", func_name);
-    fprintf(yyout, "%s:\n", func_name);
+    fprintf(yyout, "\t.global %s\n", this->sym_ptr->toStr().c_str() + 1);
+    fprintf(yyout, "\t.type %s , %%function\n",
+            this->sym_ptr->toStr().c_str() + 1);
+    fprintf(yyout, "%s:\n", this->sym_ptr->toStr().c_str() + 1);
     // TODO
     /* Hint:
      *  1. Save fp
@@ -480,9 +504,17 @@ void MachineFunction::output() {
                           lr))
         ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
-    auto size = new MachineOperand(MachineOperand::IMM, this->AllocSpace(0));
-    (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, size))
-        ->output();
+    int off = AllocSpace(0);
+    auto size = new MachineOperand(MachineOperand::IMM, off);
+    if (off < -255 || off > 255) {
+        auto r4 = new MachineOperand(MachineOperand::REG, 4);
+        (new LoadMInstruction(nullptr, r4, size))->output();
+        (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, r4))
+            ->output();
+    } else {
+        (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, size))
+            ->output();
+    }
     for (auto iter : block_list) {
         iter->output();
     }
@@ -514,7 +546,7 @@ void MachineUnit::PrintGlobalDecl() {
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
                 fprintf(yyout, "\t.word %d\n", se->getValue());
-            }else{
+            } else {
                 int n = se->getType()->getSize() / 32;
                 int* p = se->getArrayValue();
                 for (int i = 0; i < n; i++) {

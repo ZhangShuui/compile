@@ -326,6 +326,7 @@ void Id::genCode() {
                     tempSrc = dst1;
                     new LoadInstruction(dst1, addr, bb);
                     flag = true;
+                    firstFlag = false;
                 }
                 if (!idx) {
                     Operand* dst1 = new Operand(new TemporarySymbolEntry(
