@@ -5,6 +5,7 @@
     #include "parser.h"
     #include <ostream>
     #include <fstream>
+    #include <iostream>
     using namespace std;
     extern FILE *yyin; 
     extern FILE *yyout;
@@ -386,8 +387,10 @@ LINECOMMENT \/\/[^\n]*
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
     char *lexeme;
-    lexeme = new char[strlen(yytext) + 1];
-    strcpy(lexeme, yytext);
+    lexeme = new char[6 + strlen(yytext) + 1];
+    char* sysy = (char *)"_sysy_";
+    strcpy(lexeme, sysy);
+    strcpy(lexeme + 6, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
     std::vector<SymbolEntry*> vec1;
@@ -395,16 +398,20 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
-    st->install(yytext, se);
+    char *temp = new char[6+strlen(yytext)];
+    memcpy(temp, lexeme, 6+strlen(yytext));
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, temp, st->getLevel(), -1, true);
+    st->install(temp, se);
     return ID;
 }
 "stoptime" {
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
     char *lexeme;
-    lexeme = new char[strlen(yytext) + 1];
-    strcpy(lexeme, yytext);
+    lexeme = new char[6 + strlen(yytext) + 1];
+    char* sysy = (char*)"_sysy_";
+    strcpy(lexeme, sysy);
+    strcpy(lexeme + 6, yytext);
     yylval.strtype = lexeme;
     std::vector<Type*> vec;
     std::vector<SymbolEntry*> vec1;
@@ -412,8 +419,10 @@ LINECOMMENT \/\/[^\n]*
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();
-    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
-    st->install(yytext, se);
+    char *temp = new char[6+strlen(yytext)];
+    memcpy(temp, lexeme, 14);
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, temp, st->getLevel(), -1, true);
+    st->install(temp, se);
     return ID;
 }
 

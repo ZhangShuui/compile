@@ -1018,7 +1018,8 @@ int BinaryExpr::getValue() {
             value = expr1->getValue() * expr2->getValue();
             break;
         case DIV:
-            value = expr1->getValue() / expr2->getValue();
+            if(expr2->getValue())
+                value = expr1->getValue() / expr2->getValue();
             break;
         case MOD:
             value = expr1->getValue() % expr2->getValue();
