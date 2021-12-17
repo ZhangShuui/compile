@@ -3,6 +3,8 @@
 #include "Type.h"
 extern FILE* yyout;
 
+int MachineBlock::label = 0;
+
 MachineOperand::MachineOperand(int tp, int val) {
     this->type = tp;
     if (tp == MachineOperand::IMM)
@@ -476,10 +478,10 @@ void MachineBlock::output() {
             (*it)->output();
             count++;
             if (count % 500 == 0) {
-                fprintf(yyout, "\tb .C%d\n", count);
+                fprintf(yyout, "\tb .B%d\n", label);
                 fprintf(yyout, ".LTORG\n");
                 parent->getParent()->printGlobal();
-                fprintf(yyout, ".C%d:\n", count);
+                fprintf(yyout, ".B%d:\n", label++);
             }
         }
     }

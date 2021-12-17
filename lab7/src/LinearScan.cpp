@@ -156,15 +156,47 @@ void LinearScan::genSpillCode() {
         auto fp = new MachineOperand(MachineOperand::REG, 11);
         for (auto use : interval->uses) {
             auto temp = new MachineOperand(*use);
-            auto inst = new LoadMInstruction(use->getParent()->getParent(),
-                                             temp, fp, off);
-            use->getParent()->insertBefore(inst);
+            MachineOperand* operand = nullptr;
+            if (interval->disp > 255 || interval->disp < -255) {
+                operand = new MachineOperand(MachineOperand::VREG,
+                                             SymbolTable::getLabel());
+                auto inst1 = new LoadMInstruction(use->getParent()->getParent(),
+                                                  operand, off);
+                use->getParent()->insertBefore(inst1);
+            }
+            if (operand) {
+                auto inst =
+                    new LoadMInstruction(use->getParent()->getParent(), temp,
+                                         fp, new MachineOperand(*operand));
+                use->getParent()->insertBefore(inst);
+            } else {
+                auto inst = new LoadMInstruction(use->getParent()->getParent(),
+                                                 temp, fp, off);
+                use->getParent()->insertBefore(inst);
+            }
         }
         for (auto def : interval->defs) {
             auto temp = new MachineOperand(*def);
-            auto inst = new StoreMInstruction(def->getParent()->getParent(),
-                                              temp, fp, off);
-            def->getParent()->insertAfter(inst);
+            MachineOperand* operand = nullptr;
+            MachineInstruction *inst1 = nullptr, *inst = nullptr;
+            if (interval->disp > 255 || interval->disp < -255) {
+                operand = new MachineOperand(MachineOperand::VREG,
+                                             SymbolTable::getLabel());
+                inst1 = new LoadMInstruction(def->getParent()->getParent(),
+                                             operand, off);
+                def->getParent()->insertAfter(inst1);
+            }
+            if (operand)
+                inst =
+                    new StoreMInstruction(def->getParent()->getParent(), temp,
+                                          fp, new MachineOperand(*operand));
+            else
+                inst = new StoreMInstruction(def->getParent()->getParent(),
+                                             temp, fp, off);
+            if (inst1)
+                inst1->insertAfter(inst);
+            else
+                def->getParent()->insertAfter(inst);
         }
     }
 }

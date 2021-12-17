@@ -407,9 +407,10 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder) {
         int off = dynamic_cast<TemporarySymbolEntry*>(operands[1]->getEntry())
                       ->getOffset();
         auto src2 = genMachineImm(off);
-        if(off > 255 || off < -255){
+        if (off > 255 || off < -255) {
             auto operand = genMachineVReg();
-            cur_block->InsertInst((new LoadMInstruction(cur_block, operand, src2)));
+            cur_block->InsertInst(
+                (new LoadMInstruction(cur_block, operand, src2)));
             src2 = operand;
         }
         cur_inst = new LoadMInstruction(cur_block, dst, src1, src2);
@@ -445,9 +446,10 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder) {
         int off = dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())
                       ->getOffset();
         auto src2 = genMachineImm(off);
-        if(off > 255 || off < -255){
+        if (off > 255 || off < -255) {
             auto operand = genMachineVReg();
-            cur_block->InsertInst((new LoadMInstruction(cur_block, operand, src2)));
+            cur_block->InsertInst(
+                (new LoadMInstruction(cur_block, operand, src2)));
             src2 = operand;
         }
         cur_inst = new StoreMInstruction(cur_block, src, src1, src2);
@@ -742,6 +744,8 @@ GepInstruction::GepInstruction(Operand* dst,
     arr->addUse(this);
     idx->addUse(this);
     first = false;
+    init = nullptr;
+    last = false;
 }
 
 void GepInstruction::output() const {
@@ -851,12 +855,20 @@ void XorInstruction::genMachineCode(AsmBuilder* builder) {
 }
 
 void GepInstruction::genMachineCode(AsmBuilder* builder) {
-    // FIXME: 连续的gep有问题 后续可以利用前面算出的地址
     auto cur_block = builder->getBlock();
     MachineInstruction* cur_inst;
     auto dst = genMachineOperand(operands[0]);
     auto idx = genMachineOperand(operands[2]);
-    MachineOperand* base;
+    if(init){
+        if(last){
+            auto base = genMachineOperand(init);
+            cur_inst = new BinaryMInstruction(
+                cur_block, BinaryMInstruction::ADD, dst, base, genMachineImm(4));
+            cur_block->InsertInst(cur_inst);
+        }
+        return;
+    }
+    MachineOperand* base = nullptr;
     int size;
     auto idx1 = genMachineVReg();
     if (idx->isImm()) {
@@ -875,7 +887,8 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
     } else {
         if (first) {
             base = genMachineVReg();
-            if (((IdentifierSymbolEntry*)(operands[1]->getEntry()))
+            if (operands[1]->getEntry()->isVariable() &&
+                ((IdentifierSymbolEntry*)(operands[1]->getEntry()))
                     ->isGlobal()) {
                 auto src = genMachineOperand(operands[1]);
                 cur_inst = new LoadMInstruction(cur_block, base, src);
@@ -922,8 +935,10 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
                                           addr, base1, off);
         cur_block->InsertInst(cur_inst);
         addr = new MachineOperand(*addr);
-        if (((IdentifierSymbolEntry*)(operands[1]->getEntry()))->isGlobal()) {
-            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst, addr);
+        if (operands[1]->getEntry()->isVariable() &&
+            ((IdentifierSymbolEntry*)(operands[1]->getEntry()))->isGlobal()) {
+            cur_inst =
+                new MovMInstruction(cur_block, MovMInstruction::MOV, dst, addr);
         } else {
             auto fp = genMachineReg(11);
             cur_inst = new BinaryMInstruction(

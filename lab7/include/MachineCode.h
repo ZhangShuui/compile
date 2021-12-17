@@ -174,6 +174,7 @@ class MachineBlock {
     std::set<MachineOperand*> live_in;
     std::set<MachineOperand*> live_out;
     int cmpCond;
+    static int label;
 
    public:
     std::vector<MachineInstruction*>& getInsts() { return inst_list; };
@@ -203,6 +204,7 @@ class MachineBlock {
     MachineFunction* getParent() const { return parent; };
 };
 
+
 class MachineFunction {
    private:
     MachineUnit* parent;
@@ -211,7 +213,6 @@ class MachineFunction {
     std::set<int> saved_regs;
     SymbolEntry* sym_ptr;
     int paramsNum;
-    static int label;
 
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };

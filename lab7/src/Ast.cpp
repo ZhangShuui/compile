@@ -240,7 +240,7 @@ void BinaryExpr::genCode() {
             new ZextInstruction(dst, src2, bb);
             src2 = dst;
         }
-        int cmpopcode;
+        int cmpopcode = -1;
         switch (op) {
             case LESS:
                 cmpopcode = CmpInstruction::L;
@@ -277,7 +277,7 @@ void BinaryExpr::genCode() {
         expr2->genCode();
         Operand* src1 = expr1->getOperand();
         Operand* src2 = expr2->getOperand();
-        int opcode;
+        int opcode = -1;
         switch (op) {
             case ADD:
                 opcode = BinaryInstruction::ADD;
@@ -478,7 +478,7 @@ void DeclStmt::genCode() {
         // allocate space for local id in function stack.
         entry->insertFront(alloca);  // allocate instructions should be inserted
                                      // into the begin of the entry block.
-        Operand* temp;
+        Operand* temp = nullptr;
         if (se->isParam())
             temp = se->getAddr();
         se->setAddr(addr);  // set the addr operand in symbol entry so that
@@ -486,6 +486,7 @@ void DeclStmt::genCode() {
                             // can use it in subsequent code generation.
         if (expr) {
             if (expr->isInitValueListExpr()) {
+                Operand* init = nullptr;
                 BasicBlock* bb = builder->getInsertBB();
                 ExprNode* temp = expr;
                 std::stack<ExprNode*> stk;
@@ -515,13 +516,17 @@ void DeclStmt::genCode() {
                                         ->getOperand();
                             auto gep =
                                 new GepInstruction(tempDst, tempSrc, index, bb);
+                            gep->setInit(init);
                             if (flag) {
                                 gep->setFirst();
                                 flag = false;
                             }
                             if (type == TypeSystem::intType ||
-                                type == TypeSystem::constIntType)
+                                type == TypeSystem::constIntType){
+                                gep->setLast();
+                                init = tempDst;
                                 break;
+                            }
                             type = ((ArrayType*)type)->getElementType();
                             tempSrc = tempDst;
                         }
@@ -701,7 +706,7 @@ bool ExprStmt::typeCheck(Type* retType) {
 void AssignStmt::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     expr->genCode();
-    Operand* addr;
+    Operand* addr = nullptr;
     if (lval->getOriginType()->isInt())
         addr = dynamic_cast<IdentifierSymbolEntry*>(lval->getSymbolEntry())
                    ->getAddr();
@@ -1001,7 +1006,7 @@ void BinaryExpr::output(int level) {
 }
 
 int BinaryExpr::getValue() {
-    int value;
+    int value = 0;
     switch (op) {
         case ADD:
             value = expr1->getValue() + expr2->getValue();
@@ -1097,7 +1102,7 @@ void UnaryExpr::output(int level) {
 }
 
 int UnaryExpr::getValue() {
-    int value;
+    int value = 0;
     switch (op) {
         case NOT:
             value = !(expr->getValue());
