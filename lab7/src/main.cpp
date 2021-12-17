@@ -23,7 +23,7 @@ bool dump_asm;
 
 int main(int argc, char* argv[]) {
     int opt;
-    while ((opt = getopt(argc, argv, "Siato:")) != -1) {
+    while ((opt = getopt(argc, argv, "Siato:O::")) != -1) {
         switch (opt) {
             case 'o':
                 strcpy(outfile, optarg);
@@ -37,12 +37,15 @@ int main(int argc, char* argv[]) {
             case 'i':
                 dump_ir = true;
                 break;
+            case 'O':
             case 'S':
                 dump_asm = true;
                 break;
             default:
-                fprintf(stderr, "Usage: %s [-o outfile] infile\n", argv[0]);
-                exit(EXIT_FAILURE);
+                // fprintf(stderr, "Usage: %s [-o outfile] infile\n", argv[0]);
+                // exit(EXIT_FAILURE);
+                dump_asm = true;
+
                 break;
         }
     }
